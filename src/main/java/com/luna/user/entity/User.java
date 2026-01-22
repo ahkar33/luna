@@ -37,6 +37,7 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean isActive = true;
 
