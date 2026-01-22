@@ -2,19 +2,19 @@ package com.luna.auth.controller;
 
 import com.luna.auth.dto.*;
 import com.luna.auth.service.IAuthService;
+import com.luna.common.dto.ApiResponse;
+import com.luna.common.exception.BadRequestException;
 import com.luna.common.service.RateLimitService;
 import io.github.bucket4j.Bucket;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,13 +30,11 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "Register a new user", description = "Creates a new user account and sends a verification email")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Registration successful",
-            content = @Content(schema = @Schema(implementation = MessageResponse.class))),
-        @ApiResponse(responseCode = "429", description = "Too many requests",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content)
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Registration successful"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Too many requests"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input")
     })
-    public ResponseEntity<?> register(
+    public ResponseEntity<ApiResponse<Object>> register(
             @Valid @RequestBody RegisterRequest request,
             HttpServletRequest httpRequest) {
         
@@ -45,12 +43,11 @@ public class AuthController {
         Bucket bucket = rateLimitService.resolveBucket(key);
         
         if (!bucket.tryConsume(1)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(new ErrorResponse("Too many registration attempts. Please try again later."));
+            throw new BadRequestException("Too many registration attempts. Please try again later.");
         }
         
         authService.register(request);
-        return ResponseEntity.ok(new MessageResponse(
+        return ResponseEntity.ok(ApiResponse.success(
             "Registration successful. Please check your email for verification code."
         ));
     }
@@ -58,13 +55,12 @@ public class AuthController {
     @PostMapping("/verify-email")
     @Operation(summary = "Verify email address", description = "Verifies user email using the OTP sent during registration")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Email verified successfully",
-            content = @Content(schema = @Schema(implementation = MessageResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid or expired OTP", content = @Content)
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired OTP")
     })
-    public ResponseEntity<MessageResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+    public ResponseEntity<ApiResponse<Object>> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
         authService.verifyEmail(request);
-        return ResponseEntity.ok(new MessageResponse(
+        return ResponseEntity.ok(ApiResponse.success(
             "Email verified successfully. You can now login."
         ));
     }
@@ -72,13 +68,11 @@ public class AuthController {
     @PostMapping("/resend-otp")
     @Operation(summary = "Resend verification OTP", description = "Resends the email verification OTP to the user's email")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "OTP sent successfully",
-            content = @Content(schema = @Schema(implementation = MessageResponse.class))),
-        @ApiResponse(responseCode = "429", description = "Too many requests",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OTP sent successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Too many requests"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<?> resendOtp(
+    public ResponseEntity<ApiResponse<Object>> resendOtp(
             @Valid @RequestBody ResendOtpRequest request,
             HttpServletRequest httpRequest) {
         
@@ -87,12 +81,11 @@ public class AuthController {
         Bucket bucket = rateLimitService.resolveBucket(key);
         
         if (!bucket.tryConsume(1)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(new ErrorResponse("Too many requests. Please try again later."));
+            throw new BadRequestException("Too many requests. Please try again later.");
         }
         
         authService.resendOtp(request.getEmail());
-        return ResponseEntity.ok(new MessageResponse(
+        return ResponseEntity.ok(ApiResponse.success(
             "Verification code sent to your email."
         ));
     }
@@ -100,13 +93,11 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "User login", description = "Authenticates user and returns JWT tokens. May require device verification for new devices.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Login successful", 
-            content = @Content(schema = @Schema(implementation = LoginResponse.class))),
-        @ApiResponse(responseCode = "429", description = "Too many login attempts",
-            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content)
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Too many login attempts"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid credentials")
     })
-    public ResponseEntity<?> login(
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
             @Valid @RequestBody AuthRequest request,
             @Parameter(description = "Device fingerprint for device verification")
             @RequestHeader(value = "X-Device-Fingerprint", required = false) String deviceFingerprint,
@@ -117,8 +108,7 @@ public class AuthController {
         Bucket bucket = rateLimitService.resolveBucket(key);
         
         if (!bucket.tryConsume(1)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(new ErrorResponse("Too many login attempts. Please try again later."));
+            throw new BadRequestException("Too many login attempts. Please try again later.");
         }
 
         // Default device fingerprint if not provided
@@ -130,29 +120,29 @@ public class AuthController {
         String userAgent = httpRequest.getHeader("User-Agent");
         
         LoginResponse response = authService.login(request, deviceFingerprint, ipAddress, userAgent);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response, "Login successful"));
     }
 
     @PostMapping("/verify-device")
     @Operation(summary = "Verify new device", description = "Verifies a new device using the OTP sent to user's email")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Device verified successfully",
-            content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-        @ApiResponse(responseCode = "400", description = "Invalid or expired OTP", content = @Content)
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Device verified successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired OTP")
     })
-    public ResponseEntity<AuthResponse> verifyDevice(@Valid @RequestBody VerifyDeviceRequest request) {
-        return ResponseEntity.ok(authService.verifyDevice(request));
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyDevice(@Valid @RequestBody VerifyDeviceRequest request) {
+        AuthResponse response = authService.verifyDevice(request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Device verified successfully"));
     }
 
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token", description = "Generates a new access token using a valid refresh token")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Token refreshed successfully",
-            content = @Content(schema = @Schema(implementation = AuthResponse.class))),
-        @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token", content = @Content)
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Token refreshed successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
     })
-    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.ok(authService.refreshToken(request.getRefreshToken()));
+    public ResponseEntity<ApiResponse<AuthResponse>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        AuthResponse response = authService.refreshToken(request.getRefreshToken());
+        return ResponseEntity.ok(ApiResponse.success(response, "Token refreshed successfully"));
     }
 
     private String getClientIP(HttpServletRequest request) {

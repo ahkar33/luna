@@ -2,6 +2,9 @@ package com.luna.auth.service.impl;
 
 import com.luna.auth.dto.*;
 import com.luna.auth.service.IAuthService;
+import com.luna.common.exception.BadRequestException;
+import com.luna.common.exception.ResourceNotFoundException;
+import com.luna.common.exception.UnauthorizedException;
 import com.luna.common.service.EmailService;
 import com.luna.user.entity.*;
 import com.luna.user.repository.*;
@@ -35,10 +38,10 @@ public class AuthServiceImpl implements IAuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new BadRequestException("Email already exists");
         }
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new BadRequestException("Username already exists");
         }
 
         var user = User.builder()
@@ -71,15 +74,51 @@ public class AuthServiceImpl implements IAuthService {
         );
 
         var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!user.getEmailVerified()) {
-            throw new RuntimeException("Email not verified. Please verify your email first.");
+            throw new UnauthorizedException("Email not verified. Please verify your email first.");
         }
 
-        // Check if device is known and verified
+        // Check if user has any verified devices (to determine if this is first login)
+        long verifiedDeviceCount = userDeviceRepository.countByUserIdAndVerified(user.getId(), true);
+        boolean isFirstLogin = verifiedDeviceCount == 0;
+
+        // Check if current device is known and verified
         var deviceOpt = userDeviceRepository.findByUserIdAndDeviceFingerprint(user.getId(), deviceFingerprint);
         
+        // If first login, auto-verify the device and proceed
+        if (isFirstLogin) {
+            UserDevice device;
+            if (deviceOpt.isPresent()) {
+                device = deviceOpt.get();
+                device.setVerified(true);
+                device.setVerifiedAt(Instant.now());
+                device.setLastSeenAt(Instant.now());
+                device.setIpAddress(ipAddress);
+            } else {
+                device = UserDevice.builder()
+                        .user(user)
+                        .deviceFingerprint(deviceFingerprint)
+                        .ipAddress(ipAddress)
+                        .userAgent(userAgent)
+                        .verified(true)
+                        .verifiedAt(Instant.now())
+                        .build();
+            }
+            userDeviceRepository.save(device);
+
+            var accessToken = jwtService.generateAccessToken(user);
+            var refreshToken = createRefreshToken(user);
+
+            return LoginResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken.getToken())
+                    .requiresDeviceVerification(false)
+                    .build();
+        }
+        
+        // Not first login - check if device is verified
         if (deviceOpt.isEmpty() || !deviceOpt.get().getVerified()) {
             // New device or unverified device - send OTP
             String otp = generateOtp();
@@ -126,10 +165,10 @@ public class AuthServiceImpl implements IAuthService {
     @Transactional
     public AuthResponse refreshToken(String refreshTokenStr) {
         var refreshToken = refreshTokenRepository.findByToken(refreshTokenStr)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
         if (refreshToken.isRevoked() || refreshToken.getExpiryDate().isBefore(Instant.now())) {
-            throw new RuntimeException("Refresh token expired or revoked");
+            throw new UnauthorizedException("Refresh token expired or revoked");
         }
 
         var accessToken = jwtService.generateAccessToken(refreshToken.getUser());
@@ -155,17 +194,17 @@ public class AuthServiceImpl implements IAuthService {
     @Transactional
     public void verifyEmail(VerifyEmailRequest request) {
         var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         var verificationToken = verificationTokenRepository.findByOtpAndUserId(request.getOtp(), user.getId())
-                .orElseThrow(() -> new RuntimeException("Invalid OTP"));
+                .orElseThrow(() -> new BadRequestException("Invalid OTP"));
 
         if (verificationToken.getUsed()) {
-            throw new RuntimeException("OTP already used");
+            throw new BadRequestException("OTP already used");
         }
 
         if (verificationToken.getExpiryDate().isBefore(Instant.now())) {
-            throw new RuntimeException("OTP expired");
+            throw new BadRequestException("OTP expired");
         }
 
         // Mark user as verified
@@ -182,10 +221,10 @@ public class AuthServiceImpl implements IAuthService {
     @Transactional
     public void resendOtp(String email) {
         var user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getEmailVerified()) {
-            throw new RuntimeException("Email already verified");
+            throw new BadRequestException("Email already verified");
         }
 
         // Rate limiting: Check if there's a recent OTP (within last 60 seconds)
@@ -195,7 +234,7 @@ public class AuthServiceImpl implements IAuthService {
         
         if (recentToken.isPresent()) {
             long secondsLeft = 60 - (Instant.now().getEpochSecond() - recentToken.get().getCreatedAt().getEpochSecond());
-            throw new RuntimeException("Please wait " + secondsLeft + " seconds before requesting a new code");
+            throw new BadRequestException("Please wait " + secondsLeft + " seconds before requesting a new code");
         }
 
         // Generate and send new OTP
@@ -226,24 +265,24 @@ public class AuthServiceImpl implements IAuthService {
     @Transactional
     public AuthResponse verifyDevice(VerifyDeviceRequest request) {
         var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         var deviceToken = deviceVerificationTokenRepository
                 .findByOtpAndUserIdAndDeviceFingerprint(request.getOtp(), user.getId(), request.getDeviceFingerprint())
-                .orElseThrow(() -> new RuntimeException("Invalid OTP"));
+                .orElseThrow(() -> new BadRequestException("Invalid OTP"));
 
         if (deviceToken.getUsed()) {
-            throw new RuntimeException("OTP already used");
+            throw new BadRequestException("OTP already used");
         }
 
         if (deviceToken.getExpiryDate().isBefore(Instant.now())) {
-            throw new RuntimeException("OTP expired");
+            throw new BadRequestException("OTP expired");
         }
 
         // Mark device as verified
         var device = userDeviceRepository
                 .findByUserIdAndDeviceFingerprint(user.getId(), request.getDeviceFingerprint())
-                .orElseThrow(() -> new RuntimeException("Device not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Device not found"));
         
         device.setVerified(true);
         device.setVerifiedAt(Instant.now());
