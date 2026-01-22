@@ -12,7 +12,7 @@ spring:
   # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: none  # Flyway handles all schema management
+      ddl-auto: ${JPA_DDL_AUTO:none}  # Flyway handles all schema management
     show-sql: ${JPA_SHOW_SQL:true}
     properties:
       hibernate:
