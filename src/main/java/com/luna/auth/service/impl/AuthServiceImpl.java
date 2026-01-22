@@ -45,6 +45,7 @@ public class AuthServiceImpl implements IAuthService {
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
+                .isActive(true)
                 .build();
 
         userRepository.save(user);

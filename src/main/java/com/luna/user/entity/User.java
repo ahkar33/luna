@@ -37,6 +37,9 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(nullable = false)
+    private Boolean isActive = true;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -73,6 +76,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return isActive != null && isActive;
     }
 }

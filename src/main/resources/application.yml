@@ -12,15 +12,22 @@ spring:
   # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
+      ddl-auto: none  # Let Flyway handle everything
     show-sql: ${JPA_SHOW_SQL:true}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true  # Important: allows Flyway to work with existing DB
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:luna-super-secret-key-for-jwt-token-signing-change-this-in-production-12345678}
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
