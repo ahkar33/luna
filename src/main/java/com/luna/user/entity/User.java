@@ -41,6 +41,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Boolean isActive = true;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean emailVerified = false;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

@@ -12,7 +12,7 @@ spring:
   # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: validate  # Let Flyway handle everything
+      ddl-auto: none  # Flyway handles all schema management
     show-sql: ${JPA_SHOW_SQL:true}
     properties:
       hibernate:
@@ -25,6 +25,23 @@ spring:
     baseline-on-migrate: true  # Important: allows Flyway to work with existing DB
     locations: classpath:db/migration
     validate-on-migrate: true
+
+  # Mail Configuration
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 # JWT Configuration
 jwt:
