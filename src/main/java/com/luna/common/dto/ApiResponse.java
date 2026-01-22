@@ -1,6 +1,7 @@
 package com.luna.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,10 +13,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Schema(description = "Standard API response wrapper")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
+@Schema(description = "Standard API response wrapper", 
+        example = "{\"success\":true,\"data\":{},\"message\":\"Success\",\"meta\":{\"timestamp\":\"2026-01-23T00:00:00Z\"}}")
 public class ApiResponse<T> {
     
-    @Schema(description = "Indicates if the request was successful", example = "true")
+    @Schema(description = "Indicates if the request was successful", example = "true", requiredMode = Schema.RequiredMode.REQUIRED)
     private Boolean success;
     
     @Schema(description = "Response data (only present on success)")
@@ -24,10 +27,10 @@ public class ApiResponse<T> {
     @Schema(description = "Success message (optional)", example = "Operation completed successfully")
     private String message;
     
-    @Schema(description = "Error details (only present on failure)")
+    @Schema(description = "Error details (only present on failure)", implementation = ErrorDetails.class)
     private ErrorDetails error;
     
-    @Schema(description = "Response metadata")
+    @Schema(description = "Response metadata", implementation = ResponseMeta.class, requiredMode = Schema.RequiredMode.REQUIRED)
     private ResponseMeta meta;
     
     // Success response with data
