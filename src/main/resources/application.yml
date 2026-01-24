@@ -58,3 +58,14 @@ springdoc:
     enabled: true
     operationsSorter: method
     tagsSorter: alpha
+
+# Application Scheduling Configuration
+app:
+  scheduling:
+    enabled: ${SCHEDULING_ENABLED:true}
+    post-cleanup-cron: ${POST_CLEANUP_CRON:0 0 2 * * *}  # Daily at 2 AM
+
+# Logging Configuration
+logging:
+  level:
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
