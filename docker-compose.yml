@@ -18,6 +18,8 @@ services:
       - MAIL_PORT=${MAIL_PORT}
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - APP_SWAGGER_SERVER_URL=${APP_SWAGGER_SERVER_URL:-http://localhost:8080}
+      - APP_SWAGGER_SERVER_DESCRIPTION=${APP_SWAGGER_SERVER_DESCRIPTION:-Local Development Server}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]

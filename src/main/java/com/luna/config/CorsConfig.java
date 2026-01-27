@@ -17,11 +17,11 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // Allow all origins (for development/testing)
-        configuration.addAllowedOriginPattern("*");
+        configuration.setAllowedOriginPatterns(List.of("*"));
         
         // Allow all HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"
         ));
         
         // Allow all headers
@@ -38,7 +38,9 @@ public class CorsConfig {
             "Accept",
             "Origin",
             "Access-Control-Request-Method",
-            "Access-Control-Request-Headers"
+            "Access-Control-Request-Headers",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
         ));
         
         // Cache preflight response for 1 hour
