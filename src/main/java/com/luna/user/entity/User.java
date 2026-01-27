@@ -44,6 +44,9 @@ public class User implements UserDetails {
     @Builder.Default
     @Column(nullable = false)
     private Boolean emailVerified = false;
+    
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

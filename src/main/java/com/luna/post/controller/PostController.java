@@ -13,9 +13,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -26,13 +30,15 @@ public class PostController {
     
     private final IPostService postService;
     
-    @PostMapping
-    @Operation(summary = "Create a new post")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Create a new post with optional images or video")
     public ResponseEntity<PostResponse> createPost(
-            @Valid @RequestBody CreatePostRequest request,
+            @Valid @ModelAttribute CreatePostRequest request,
+            @RequestPart(required = false) List<MultipartFile> images,
+            @RequestPart(required = false) MultipartFile video,
             Authentication authentication) {
         Long userId = Long.parseLong(authentication.getName());
-        PostResponse response = postService.createPost(request, userId);
+        PostResponse response = postService.createPost(request, userId, images, video);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     

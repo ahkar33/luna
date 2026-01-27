@@ -1,10 +1,14 @@
 package com.luna.post.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.luna.activity.entity.ActivityType;
 import com.luna.activity.service.IActivityService;
 import com.luna.common.exception.BadRequestException;
 import com.luna.common.exception.ResourceNotFoundException;
 import com.luna.common.exception.UnauthorizedException;
+import com.luna.common.service.CloudinaryService;
 import com.luna.post.dto.CreatePostRequest;
 import com.luna.post.dto.PostResponse;
 import com.luna.post.entity.Post;
@@ -19,6 +23,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,12 +37,23 @@ public class PostServiceImpl implements IPostService {
     private final PostLikeRepository postLikeRepository;
     private final UserRepository userRepository;
     private final IActivityService activityService;
+    private final CloudinaryService cloudinaryService;
+    private final ObjectMapper objectMapper;
     
     @Override
     @Transactional
-    public PostResponse createPost(CreatePostRequest request, Long userId) {
+    public PostResponse createPost(CreatePostRequest request, Long userId, List<MultipartFile> images, MultipartFile video) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        // Validate media
+        if (images != null && images.size() > 3) {
+            throw new BadRequestException("Maximum 3 images allowed per post");
+        }
+        
+        if (video != null && !video.isEmpty() && images != null && !images.isEmpty()) {
+            throw new BadRequestException("Cannot upload both images and video in the same post");
+        }
         
         Post post = Post.builder()
             .title(request.getTitle())
@@ -41,6 +61,28 @@ public class PostServiceImpl implements IPostService {
             .author(user)
             .likeCount(0L)
             .build();
+        
+        // Upload images
+        if (images != null && !images.isEmpty()) {
+            List<String> imageUrls = new ArrayList<>();
+            for (MultipartFile image : images) {
+                if (image != null && !image.isEmpty()) {
+                    String imageUrl = cloudinaryService.uploadImage(image, "posts");
+                    imageUrls.add(imageUrl);
+                }
+            }
+            if (!imageUrls.isEmpty()) {
+                post.setImageUrls(toJson(imageUrls));
+            }
+        }
+        
+        // Upload video
+        if (video != null && !video.isEmpty()) {
+            String videoUrl = cloudinaryService.uploadVideo(video, "posts");
+            List<String> videoUrls = new ArrayList<>();
+            videoUrls.add(videoUrl);
+            post.setVideoUrls(toJson(videoUrls));
+        }
         
         post = postRepository.save(post);
         
@@ -148,18 +190,49 @@ public class PostServiceImpl implements IPostService {
             return 0;
         }
         
-        // Delete in batches to avoid memory issues with large datasets
+        // Delete media from Cloudinary and posts in batches
         int batchSize = 100;
         int totalDeleted = 0;
         
         for (int i = 0; i < postsToDelete.size(); i += batchSize) {
             int end = Math.min(i + batchSize, postsToDelete.size());
             java.util.List<Post> batch = postsToDelete.subList(i, end);
+            
+            // Delete media for each post in the batch
+            for (Post post : batch) {
+                deletePostMedia(post);
+            }
+            
+            // Delete posts from database
             postRepository.deleteAll(batch);
             totalDeleted += batch.size();
         }
         
         return totalDeleted;
+    }
+    
+    private void deletePostMedia(Post post) {
+        // Delete images
+        List<String> imageUrls = fromJson(post.getImageUrls());
+        if (imageUrls != null) {
+            for (String imageUrl : imageUrls) {
+                String publicId = cloudinaryService.extractPublicId(imageUrl);
+                if (publicId != null) {
+                    cloudinaryService.deleteFile(publicId);
+                }
+            }
+        }
+        
+        // Delete videos
+        List<String> videoUrls = fromJson(post.getVideoUrls());
+        if (videoUrls != null) {
+            for (String videoUrl : videoUrls) {
+                String publicId = cloudinaryService.extractPublicId(videoUrl);
+                if (publicId != null) {
+                    cloudinaryService.deleteFile(publicId);
+                }
+            }
+        }
     }
     
     @Override
@@ -227,15 +300,40 @@ public class PostServiceImpl implements IPostService {
             .id(post.getId())
             .title(post.getTitle())
             .content(post.getContent())
+            .imageUrls(fromJson(post.getImageUrls()))
+            .videoUrls(fromJson(post.getVideoUrls()))
             .author(PostResponse.AuthorInfo.builder()
                 .id(post.getAuthor().getId())
                 .username(post.getAuthor().getUsername())
                 .email(post.getAuthor().getEmail())
+                .profileImageUrl(post.getAuthor().getProfileImageUrl())
                 .build())
             .likeCount(post.getLikeCount())
             .isLikedByCurrentUser(isLiked)
             .createdAt(post.getCreatedAt())
             .updatedAt(post.getUpdatedAt())
             .build();
+    }
+    
+    private String toJson(List<String> list) {
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (JsonProcessingException e) {
+            throw new BadRequestException("Failed to process image URLs");
+        }
+    }
+    
+    private List<String> fromJson(String json) {
+        if (json == null || json.isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            return Collections.emptyList();
+        }
     }
 }

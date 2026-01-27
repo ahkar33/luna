@@ -4,10 +4,13 @@ import com.luna.post.dto.CreatePostRequest;
 import com.luna.post.dto.PostResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 public interface IPostService {
     
-    PostResponse createPost(CreatePostRequest request, Long userId);
+    PostResponse createPost(CreatePostRequest request, Long userId, List<MultipartFile> images, MultipartFile video);
     
     PostResponse getPostById(Long postId, Long currentUserId);
     

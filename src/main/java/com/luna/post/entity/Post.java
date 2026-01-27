@@ -31,6 +31,12 @@ public class Post {
     @Column(columnDefinition = "TEXT")
     private String content;
     
+    @Column(name = "image_urls", columnDefinition = "TEXT")
+    private String imageUrls; // JSON array of image URLs
+    
+    @Column(name = "video_urls", columnDefinition = "TEXT")
+    private String videoUrls; // JSON array of video URLs
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User author;

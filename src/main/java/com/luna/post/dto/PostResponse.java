@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -16,6 +17,8 @@ public class PostResponse {
     private Long id;
     private String title;
     private String content;
+    private List<String> imageUrls;
+    private List<String> videoUrls;
     private AuthorInfo author;
     private Long likeCount;
     private Boolean isLikedByCurrentUser;
@@ -30,5 +33,6 @@ public class PostResponse {
         private Long id;
         private String username;
         private String email;
+        private String profileImageUrl;
     }
 }

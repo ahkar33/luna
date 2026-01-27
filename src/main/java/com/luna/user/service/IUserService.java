@@ -1,7 +1,12 @@
 package com.luna.user.service;
 
+import com.luna.user.dto.UserProfileResponse;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface IUserService extends UserDetailsService {
-    // Additional user-related methods can be added here in the future
+    
+    UserProfileResponse updateProfileImage(Long userId, MultipartFile image);
+    
+    UserProfileResponse getUserProfile(Long userId);
 }
