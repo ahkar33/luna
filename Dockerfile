@@ -1,5 +1,5 @@
 # Build stage
-FROM gradle:8.5-jdk21-alpine AS build
+FROM gradle:8.14-jdk21 AS build
 WORKDIR /app
 
 # Copy gradle files
@@ -16,11 +16,11 @@ COPY src ./src
 RUN gradle bootJar --no-daemon
 
 # Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # Create non-root user
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN groupadd -r spring && useradd -r -g spring spring
 USER spring:spring
 
 # Copy jar from build stage
@@ -31,7 +31,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+  CMD curl -f http://localhost:8080/health || exit 1
 
 # Run application
 ENTRYPOINT ["java", "-jar", "app.jar"]
