@@ -9,4 +9,6 @@ public interface IUserService extends UserDetailsService {
     UserProfileResponse updateProfileImage(Long userId, MultipartFile image);
     
     UserProfileResponse getUserProfile(Long userId);
+    
+    UserProfileResponse getUserProfileByUsername(String username);
 }

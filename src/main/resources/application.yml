@@ -49,6 +49,10 @@ jwt:
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
 
+# Service-to-Service Authentication
+service:
+  api-key: ${SERVICE_API_KEY}
+
 # Cloudinary Configuration
 cloudinary:
   url: ${CLOUDINARY_URL}
@@ -68,6 +72,8 @@ app:
   scheduling:
     enabled: ${SCHEDULING_ENABLED:true}
     post-cleanup-cron: ${POST_CLEANUP_CRON:0 0 2 * * *}  # Daily at 2 AM
+  service:
+    api-key: ${SERVICE_API_KEY:}
 
 # Logging Configuration
 logging:

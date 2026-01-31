@@ -57,6 +57,15 @@ public class UserServiceImpl implements IUserService {
         return mapToUserProfileResponse(user);
     }
     
+    @Override
+    @Transactional(readOnly = true)
+    public UserProfileResponse getUserProfileByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        return mapToUserProfileResponse(user);
+    }
+    
     private UserProfileResponse mapToUserProfileResponse(User user) {
         return UserProfileResponse.builder()
             .id(user.getId())
