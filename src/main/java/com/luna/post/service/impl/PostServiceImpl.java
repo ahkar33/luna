@@ -21,6 +21,7 @@ import com.luna.post.repository.PostLikeRepository;
 import com.luna.post.repository.PostRepository;
 import com.luna.post.repository.RepostRepository;
 import com.luna.post.repository.SavedPostRepository;
+import com.luna.post.service.HashtagService;
 import com.luna.post.service.IPostService;
 import com.luna.user.entity.User;
 import com.luna.user.repository.UserRepository;
@@ -50,6 +51,7 @@ public class PostServiceImpl implements IPostService {
     private final UserRepository userRepository;
     private final IActivityService activityService;
     private final CloudinaryService cloudinaryService;
+    private final HashtagService hashtagService;
     private final ObjectMapper objectMapper;
     
     @Override
@@ -124,6 +126,9 @@ public class PostServiceImpl implements IPostService {
         }
         
         post = postRepository.save(post);
+        
+        // Process hashtags from content
+        hashtagService.processHashtags(post);
         
         // Log activity
         activityService.logActivity(userId, ActivityType.POST_CREATE, "POST", 

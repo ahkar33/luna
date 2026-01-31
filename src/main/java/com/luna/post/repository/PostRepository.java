@@ -25,4 +25,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     
     @Query("SELECT p FROM Post p WHERE p.deletedAt IS NOT NULL AND p.deletedAt < :cutoffDate")
     List<Post> findPostsToHardDelete(@Param("cutoffDate") LocalDateTime cutoffDate);
+    
+    @Query("""
+        SELECT DISTINCT p FROM Post p
+        JOIN PostHashtag ph ON ph.post.id = p.id
+        JOIN Hashtag h ON ph.hashtag.id = h.id
+        WHERE h.name = :hashtagName AND p.deletedAt IS NULL
+        ORDER BY p.createdAt DESC
+        """)
+    Page<Post> findByHashtag(@Param("hashtagName") String hashtagName, Pageable pageable);
 }
