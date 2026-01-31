@@ -14,8 +14,10 @@ import com.luna.post.dto.CreatePostRequest;
 import com.luna.post.dto.PostResponse;
 import com.luna.post.entity.Post;
 import com.luna.post.entity.PostLike;
+import com.luna.post.entity.SavedPost;
 import com.luna.post.repository.PostLikeRepository;
 import com.luna.post.repository.PostRepository;
+import com.luna.post.repository.SavedPostRepository;
 import com.luna.post.service.IPostService;
 import com.luna.user.entity.User;
 import com.luna.user.repository.UserRepository;
@@ -39,6 +41,7 @@ public class PostServiceImpl implements IPostService {
     
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
+    private final SavedPostRepository savedPostRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final IActivityService activityService;
@@ -122,7 +125,7 @@ public class PostServiceImpl implements IPostService {
         activityService.logActivity(userId, ActivityType.POST_CREATE, "POST", 
             post.getId(), null, null);
         
-        return mapToPostResponse(post, false);
+        return mapToPostResponse(post, userId, false);
     }
     
     @Override
@@ -138,7 +141,7 @@ public class PostServiceImpl implements IPostService {
         boolean isLiked = currentUserId != null && 
             postLikeRepository.existsByPostIdAndUserId(postId, currentUserId);
         
-        return mapToPostResponse(post, isLiked);
+        return mapToPostResponse(post, currentUserId, isLiked);
     }
     
     @Override
@@ -153,7 +156,7 @@ public class PostServiceImpl implements IPostService {
         return posts.map(post -> {
             boolean isLiked = currentUserId != null && 
                 postLikeRepository.existsByPostIdAndUserId(post.getId(), currentUserId);
-            return mapToPostResponse(post, isLiked);
+            return mapToPostResponse(post, currentUserId, isLiked);
         });
     }
     
@@ -164,7 +167,7 @@ public class PostServiceImpl implements IPostService {
         
         return posts.map(post -> {
             boolean isLiked = postLikeRepository.existsByPostIdAndUserId(post.getId(), userId);
-            return mapToPostResponse(post, isLiked);
+            return mapToPostResponse(post, userId, isLiked);
         });
     }
     
@@ -298,7 +301,7 @@ public class PostServiceImpl implements IPostService {
         activityService.logActivity(userId, ActivityType.LIKE, "POST", 
             postId, post.getAuthor().getId(), null);
         
-        return mapToPostResponse(post, true);
+        return mapToPostResponse(post, userId, true);
     }
     
     @Override
@@ -324,11 +327,68 @@ public class PostServiceImpl implements IPostService {
         activityService.logActivity(userId, ActivityType.UNLIKE, "POST", 
             postId, post.getAuthor().getId(), null);
         
-        return mapToPostResponse(post, false);
+        return mapToPostResponse(post, userId, false);
     }
     
-    private PostResponse mapToPostResponse(Post post, boolean isLiked) {
+    @Override
+    @Transactional
+    public PostResponse savePost(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+            .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+        
+        if (post.isDeleted()) {
+            throw new ResourceNotFoundException("Post not found");
+        }
+        
+        if (savedPostRepository.existsByUserIdAndPostId(userId, postId)) {
+            throw new BadRequestException("Post already saved");
+        }
+        
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        SavedPost savedPost = SavedPost.builder()
+            .user(user)
+            .post(post)
+            .build();
+        
+        savedPostRepository.save(savedPost);
+        
+        boolean isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId);
+        return mapToPostResponse(post, userId, isLiked);
+    }
+    
+    @Override
+    @Transactional
+    public PostResponse unsavePost(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+            .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+        
+        if (!savedPostRepository.existsByUserIdAndPostId(userId, postId)) {
+            throw new BadRequestException("Post not saved");
+        }
+        
+        savedPostRepository.deleteByUserIdAndPostId(userId, postId);
+        
+        boolean isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId);
+        return mapToPostResponse(post, userId, isLiked);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PostResponse> getSavedPosts(Long userId, Pageable pageable) {
+        Page<SavedPost> savedPosts = savedPostRepository.findByUserIdOrderBySavedAtDesc(userId, pageable);
+        
+        return savedPosts.map(saved -> {
+            Post post = saved.getPost();
+            boolean isLiked = postLikeRepository.existsByPostIdAndUserId(post.getId(), userId);
+            return mapToPostResponse(post, userId, isLiked);
+        });
+    }
+    
+    private PostResponse mapToPostResponse(Post post, Long userId, boolean isLiked) {
         long commentCount = commentRepository.countByPostId(post.getId());
+        boolean isSaved = userId != null && savedPostRepository.existsByUserIdAndPostId(userId, post.getId());
         
         return PostResponse.builder()
             .id(post.getId())
@@ -345,6 +405,7 @@ public class PostServiceImpl implements IPostService {
             .likeCount(post.getLikeCount())
             .commentCount(commentCount)
             .isLikedByCurrentUser(isLiked)
+            .isSavedByCurrentUser(isSaved)
             .createdAt(post.getCreatedAt())
             .updatedAt(post.getUpdatedAt())
             .build();

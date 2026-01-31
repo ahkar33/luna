@@ -27,4 +27,10 @@ public interface IPostService {
     PostResponse likePost(Long postId, Long userId);
     
     PostResponse unlikePost(Long postId, Long userId);
+    
+    PostResponse savePost(Long postId, Long userId);
+    
+    PostResponse unsavePost(Long postId, Long userId);
+    
+    Page<PostResponse> getSavedPosts(Long userId, Pageable pageable);
 }

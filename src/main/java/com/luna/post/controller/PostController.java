@@ -117,4 +117,36 @@ public class PostController {
         PostResponse response = postService.unlikePost(postId, userId);
         return ResponseEntity.ok(response);
     }
+    
+    @PostMapping("/{postId}/save")
+    @Operation(summary = "Save a post for later")
+    public ResponseEntity<PostResponse> savePost(
+            @PathVariable Long postId,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        PostResponse response = postService.savePost(postId, userId);
+        return ResponseEntity.ok(response);
+    }
+    
+    @DeleteMapping("/{postId}/save")
+    @Operation(summary = "Unsave a post")
+    public ResponseEntity<PostResponse> unsavePost(
+            @PathVariable Long postId,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        PostResponse response = postService.unsavePost(postId, userId);
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/saved")
+    @Operation(summary = "Get saved posts")
+    public ResponseEntity<Page<PostResponse>> getSavedPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        Pageable pageable = PageRequest.of(page, size);
+        Page<PostResponse> posts = postService.getSavedPosts(userId, pageable);
+        return ResponseEntity.ok(posts);
+    }
 }

@@ -23,6 +23,7 @@ public class PostResponse {
     private Long likeCount;
     private Long commentCount;
     private Boolean isLikedByCurrentUser;
+    private Boolean isSavedByCurrentUser;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
