@@ -1,4 +1,4 @@
-package com.luna.post.dto;
+package com.luna.comment.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,17 +12,16 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostResponse {
+public class CommentResponse {
     
     private Long id;
-    private String title;
     private String content;
-    private List<String> imageUrls;
-    private List<String> videoUrls;
     private AuthorInfo author;
-    private Long likeCount;
-    private Long commentCount;
-    private Boolean isLikedByCurrentUser;
+    private Long postId;
+    private Long parentId;
+    private Integer depth;
+    private List<CommentResponse> replies;
+    private Integer replyCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -33,7 +32,6 @@ public class PostResponse {
     public static class AuthorInfo {
         private Long id;
         private String username;
-        private String email;
         private String profileImageUrl;
     }
 }

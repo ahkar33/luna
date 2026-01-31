@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.luna.activity.entity.ActivityType;
 import com.luna.activity.service.IActivityService;
+import com.luna.comment.repository.CommentRepository;
 import com.luna.common.exception.BadRequestException;
 import com.luna.common.exception.ResourceNotFoundException;
 import com.luna.common.exception.UnauthorizedException;
@@ -35,6 +36,7 @@ public class PostServiceImpl implements IPostService {
     
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final IActivityService activityService;
     private final CloudinaryService cloudinaryService;
@@ -296,6 +298,8 @@ public class PostServiceImpl implements IPostService {
     }
     
     private PostResponse mapToPostResponse(Post post, boolean isLiked) {
+        long commentCount = commentRepository.countByPostId(post.getId());
+        
         return PostResponse.builder()
             .id(post.getId())
             .title(post.getTitle())
@@ -309,6 +313,7 @@ public class PostServiceImpl implements IPostService {
                 .profileImageUrl(post.getAuthor().getProfileImageUrl())
                 .build())
             .likeCount(post.getLikeCount())
+            .commentCount(commentCount)
             .isLikedByCurrentUser(isLiked)
             .createdAt(post.getCreatedAt())
             .updatedAt(post.getUpdatedAt())
