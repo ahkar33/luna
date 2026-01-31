@@ -17,4 +17,8 @@ public interface IAuthService {
     void resendDeviceOtp(String email);
     
     AuthResponse verifyDevice(VerifyDeviceRequest request);
+    
+    void forgotPassword(String email);
+    
+    void resetPassword(ResetPasswordRequest request);
 }

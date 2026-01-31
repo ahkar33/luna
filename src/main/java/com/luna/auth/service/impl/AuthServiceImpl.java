@@ -39,6 +39,7 @@ public class AuthServiceImpl implements IAuthService {
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
     private final GeoIpService geoIpService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Override
     @Transactional
@@ -367,5 +368,60 @@ public class AuthServiceImpl implements IAuthService {
                 .build();
 
         deviceVerificationTokenRepository.save(token);
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(String email) {
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Rate limiting: Check if there's a recent OTP (within last 60 seconds)
+        Instant oneMinuteAgo = Instant.now().minusSeconds(60);
+        var recentToken = passwordResetTokenRepository
+                .findFirstByUserIdAndCreatedAtAfterOrderByCreatedAtDesc(user.getId(), oneMinuteAgo);
+        
+        if (recentToken.isPresent()) {
+            long secondsLeft = 60 - (Instant.now().getEpochSecond() - recentToken.get().getCreatedAt().getEpochSecond());
+            throw new BadRequestException("Please wait " + secondsLeft + " seconds before requesting a new code");
+        }
+
+        // Generate and send OTP
+        String otp = generateOtp();
+        var token = PasswordResetToken.builder()
+                .otp(otp)
+                .user(user)
+                .expiryDate(Instant.now().plusSeconds(900)) // 15 minutes
+                .used(false)
+                .build();
+        passwordResetTokenRepository.save(token);
+
+        emailService.sendPasswordResetEmail(user.getEmail(), otp);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        var user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        var resetToken = passwordResetTokenRepository.findByOtpAndUserId(request.getOtp(), user.getId())
+                .orElseThrow(() -> new BadRequestException("Invalid OTP"));
+
+        if (resetToken.getUsed()) {
+            throw new BadRequestException("OTP already used");
+        }
+
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
+            throw new BadRequestException("OTP expired");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Mark token as used
+        resetToken.setUsed(true);
+        passwordResetTokenRepository.save(resetToken);
     }
 }

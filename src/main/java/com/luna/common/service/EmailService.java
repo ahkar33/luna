@@ -56,4 +56,25 @@ public class EmailService {
             throw new RuntimeException("Failed to send device verification email");
         }
     }
+
+    public void sendPasswordResetEmail(String to, String otp) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(to);
+            message.setSubject("Luna - Password Reset");
+            message.setText(String.format(
+                "Password Reset Request\n\n" +
+                "Your password reset code is: %s\n\n" +
+                "This code will expire in 15 minutes.\n\n" +
+                "If you didn't request a password reset, please ignore this email.",
+                otp
+            ));
+            
+            mailSender.send(message);
+            log.info("Password reset email sent to: {}", to);
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", to, e);
+            throw new RuntimeException("Failed to send password reset email");
+        }
+    }
 }
