@@ -70,6 +70,12 @@ public class FollowServiceImpl implements IFollowService {
     }
     
     @Override
+    public boolean isMutualFollow(Long userId1, Long userId2) {
+        return userFollowRepository.existsByFollowerIdAndFollowingId(userId1, userId2)
+            && userFollowRepository.existsByFollowerIdAndFollowingId(userId2, userId1);
+    }
+    
+    @Override
     public long getFollowerCount(Long userId) {
         return userFollowRepository.countByFollowingId(userId);
     }

@@ -8,6 +8,8 @@ public interface IFollowService {
     
     boolean isFollowing(Long followerId, Long followingId);
     
+    boolean isMutualFollow(Long userId1, Long userId2);
+    
     long getFollowerCount(Long userId);
     
     long getFollowingCount(Long userId);

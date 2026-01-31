@@ -10,6 +10,7 @@ import com.luna.user.entity.*;
 import com.luna.user.repository.*;
 import com.luna.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +24,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements IAuthService {
+
+    @Value("${app.security.device-verification-enabled:true}")
+    private boolean deviceVerificationEnabled;
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -78,6 +82,18 @@ public class AuthServiceImpl implements IAuthService {
 
         if (!user.getEmailVerified()) {
             throw new UnauthorizedException("Email not verified. Please verify your email first.");
+        }
+
+        // Skip device verification if disabled
+        if (!deviceVerificationEnabled) {
+            var accessToken = jwtService.generateAccessToken(user);
+            var refreshToken = createRefreshToken(user);
+
+            return LoginResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken.getToken())
+                    .requiresDeviceVerification(false)
+                    .build();
         }
 
         // Check if user has any verified devices (to determine if this is first login)

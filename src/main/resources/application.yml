@@ -74,6 +74,8 @@ app:
     post-cleanup-cron: ${POST_CLEANUP_CRON:0 0 2 * * *}  # Daily at 2 AM
   service:
     api-key: ${SERVICE_API_KEY:}
+  security:
+    device-verification-enabled: ${DEVICE_VERIFICATION_ENABLED:true}  # Set to false to skip device verification
 
 # Logging Configuration
 logging:

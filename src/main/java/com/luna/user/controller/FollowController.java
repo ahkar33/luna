@@ -59,4 +59,13 @@ public class FollowController {
         Long currentUserId = Long.parseLong(authentication.getName());
         return ResponseEntity.ok(followService.isFollowing(currentUserId, userId));
     }
+    
+    @GetMapping("/{userId}/is-mutual")
+    @Operation(summary = "Check if both users follow each other")
+    public ResponseEntity<Boolean> isMutualFollow(
+            @PathVariable Long userId,
+            Authentication authentication) {
+        Long currentUserId = Long.parseLong(authentication.getName());
+        return ResponseEntity.ok(followService.isMutualFollow(currentUserId, userId));
+    }
 }
