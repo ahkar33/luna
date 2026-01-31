@@ -16,6 +16,7 @@ public class UserProfileResponse {
     private String username;
     private String email;
     private String profileImageUrl;
+    private String bio;
     private String countryCode;
     private String country;
     private Boolean emailVerified;

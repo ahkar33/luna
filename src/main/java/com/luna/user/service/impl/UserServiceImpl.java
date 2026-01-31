@@ -60,6 +60,18 @@ public class UserServiceImpl implements IUserService {
     }
     
     @Override
+    @Transactional
+    public UserProfileResponse updateBio(Long userId, String bio) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        user.setBio(bio);
+        user = userRepository.save(user);
+        
+        return mapToUserProfileResponse(user);
+    }
+    
+    @Override
     @Transactional(readOnly = true)
     public UserProfileResponse getUserProfile(Long userId) {
         User user = userRepository.findById(userId)
@@ -83,6 +95,7 @@ public class UserServiceImpl implements IUserService {
             .username(user.getUsername())
             .email(user.getEmail())
             .profileImageUrl(user.getProfileImageUrl())
+            .bio(user.getBio())
             .countryCode(user.getCountryCode())
             .country(user.getCountry())
             .emailVerified(user.getEmailVerified())

@@ -1,5 +1,6 @@
 package com.luna.user.controller;
 
+import com.luna.user.dto.UpdateBioRequest;
 import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.dto.UserSuggestionResponse;
 import com.luna.user.service.IUserService;
@@ -16,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -49,6 +51,16 @@ public class UserController {
             Authentication authentication) {
         Long userId = Long.parseLong(authentication.getName());
         UserProfileResponse response = userService.updateProfileImage(userId, image);
+        return ResponseEntity.ok(response);
+    }
+    
+    @PutMapping("/profile/bio")
+    @Operation(summary = "Update profile bio", description = "Update user bio (max 500 characters)")
+    public ResponseEntity<UserProfileResponse> updateBio(
+            @Valid @RequestBody UpdateBioRequest request,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        UserProfileResponse response = userService.updateBio(userId, request.getBio());
         return ResponseEntity.ok(response);
     }
     

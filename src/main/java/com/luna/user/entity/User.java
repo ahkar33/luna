@@ -53,6 +53,9 @@ public class User implements UserDetails {
     
     @Column(name = "country")
     private String country;  // Full country name
+    
+    @Column(name = "bio", length = 500)
+    private String bio;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
