@@ -243,6 +243,32 @@ public class AuthServiceImpl implements IAuthService {
         emailService.sendVerificationEmail(user.getEmail(), otp);
     }
 
+    @Override
+    @Transactional
+    public void resendDeviceOtp(String email) {
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!user.getEmailVerified()) {
+            throw new BadRequestException("Please verify your email first");
+        }
+
+        // Find the most recent device verification token to get device fingerprint
+        var recentDeviceToken = deviceVerificationTokenRepository
+                .findAll()
+                .stream()
+                .filter(token -> token.getUser().getId().equals(user.getId()))
+                .max((t1, t2) -> t1.getCreatedAt().compareTo(t2.getCreatedAt()))
+                .orElseThrow(() -> new BadRequestException("No pending device verification found"));
+
+        String deviceFingerprint = recentDeviceToken.getDeviceFingerprint();
+
+        // Generate and send new device OTP
+        String otp = generateOtp();
+        createDeviceVerificationToken(user, deviceFingerprint, otp);
+        emailService.sendDeviceVerificationEmail(user.getEmail(), deviceFingerprint, otp);
+    }
+
     private String generateOtp() {
         Random random = new Random();
         int otp = 100000 + random.nextInt(900000);

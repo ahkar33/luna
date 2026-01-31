@@ -14,5 +14,7 @@ public interface IAuthService {
     
     void resendOtp(String email);
     
+    void resendDeviceOtp(String email);
+    
     AuthResponse verifyDevice(VerifyDeviceRequest request);
 }

@@ -132,6 +132,31 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response, "Device verified successfully"));
     }
 
+    @PostMapping("/resend-device-otp")
+    @Operation(summary = "Resend device verification OTP", description = "Resends the device verification OTP to the user's email")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OTP sent successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Too many requests"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<ApiResponse<Object>> resendDeviceOtp(
+            @Valid @RequestBody ResendOtpRequest request,
+            HttpServletRequest httpRequest) {
+        
+        // Rate limit by IP + email
+        String key = "resend-device:" + getClientIP(httpRequest) + ":" + request.getEmail();
+        Bucket bucket = rateLimitService.resolveBucket(key);
+        
+        if (!bucket.tryConsume(1)) {
+            throw new BadRequestException("Too many requests. Please try again later.");
+        }
+        
+        authService.resendDeviceOtp(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success(
+            "Device verification code sent to your email."
+        ));
+    }
+
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token", description = "Generates a new access token using a valid refresh token")
     @ApiResponses(value = {
