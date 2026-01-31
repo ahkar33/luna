@@ -44,6 +44,7 @@ public class CloudinaryService {
         }
     }
     
+    @SuppressWarnings("unchecked")
     private String uploadFile(MultipartFile file, String folder, String resourceType) {
         try {
             Map<String, Object> uploadParams = ObjectUtils.asMap(
@@ -51,7 +52,7 @@ public class CloudinaryService {
                 "resource_type", resourceType
             );
             
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
             return (String) uploadResult.get("secure_url");
         } catch (IOException e) {
             log.error("Failed to upload file to Cloudinary", e);

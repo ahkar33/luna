@@ -31,14 +31,15 @@ public class PostController {
     private final IPostService postService;
     
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Create a new post with optional images or video")
+    @Operation(summary = "Create a new post with optional images or videos",
+               description = "Upload unlimited images (max 50MB total) OR unlimited videos (max 100MB total). Cannot mix images and videos.")
     public ResponseEntity<PostResponse> createPost(
             @Valid @ModelAttribute CreatePostRequest request,
             @RequestPart(required = false) List<MultipartFile> images,
-            @RequestPart(required = false) MultipartFile video,
+            @RequestPart(required = false) List<MultipartFile> videos,
             Authentication authentication) {
         Long userId = Long.parseLong(authentication.getName());
-        PostResponse response = postService.createPost(request, userId, images, video);
+        PostResponse response = postService.createPost(request, userId, images, videos);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     

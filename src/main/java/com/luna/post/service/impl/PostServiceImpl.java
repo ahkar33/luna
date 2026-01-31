@@ -34,6 +34,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PostServiceImpl implements IPostService {
     
+    private static final long MAX_TOTAL_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB total for images
+    private static final long MAX_TOTAL_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB total for videos
+    
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
@@ -44,17 +47,38 @@ public class PostServiceImpl implements IPostService {
     
     @Override
     @Transactional
-    public PostResponse createPost(CreatePostRequest request, Long userId, List<MultipartFile> images, MultipartFile video) {
+    public PostResponse createPost(CreatePostRequest request, Long userId, List<MultipartFile> images, List<MultipartFile> videos) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
-        // Validate media
-        if (images != null && images.size() > 3) {
-            throw new BadRequestException("Maximum 3 images allowed per post");
+        // Validate: can't have both images and videos
+        boolean hasImages = images != null && !images.isEmpty() && images.stream().anyMatch(f -> f != null && !f.isEmpty());
+        boolean hasVideos = videos != null && !videos.isEmpty() && videos.stream().anyMatch(f -> f != null && !f.isEmpty());
+        
+        if (hasImages && hasVideos) {
+            throw new BadRequestException("Cannot upload both images and videos in the same post");
         }
         
-        if (video != null && !video.isEmpty() && images != null && !images.isEmpty()) {
-            throw new BadRequestException("Cannot upload both images and video in the same post");
+        // Validate total image size
+        if (hasImages && images != null) {
+            long totalImageSize = images.stream()
+                .filter(f -> f != null && !f.isEmpty())
+                .mapToLong(MultipartFile::getSize)
+                .sum();
+            if (totalImageSize > MAX_TOTAL_IMAGE_SIZE) {
+                throw new BadRequestException("Total image size exceeds 50MB limit");
+            }
+        }
+        
+        // Validate total video size
+        if (hasVideos && videos != null) {
+            long totalVideoSize = videos.stream()
+                .filter(f -> f != null && !f.isEmpty())
+                .mapToLong(MultipartFile::getSize)
+                .sum();
+            if (totalVideoSize > MAX_TOTAL_VIDEO_SIZE) {
+                throw new BadRequestException("Total video size exceeds 100MB limit");
+            }
         }
         
         Post post = Post.builder()
@@ -65,7 +89,7 @@ public class PostServiceImpl implements IPostService {
             .build();
         
         // Upload images
-        if (images != null && !images.isEmpty()) {
+        if (hasImages && images != null) {
             List<String> imageUrls = new ArrayList<>();
             for (MultipartFile image : images) {
                 if (image != null && !image.isEmpty()) {
@@ -78,12 +102,18 @@ public class PostServiceImpl implements IPostService {
             }
         }
         
-        // Upload video
-        if (video != null && !video.isEmpty()) {
-            String videoUrl = cloudinaryService.uploadVideo(video, "posts");
+        // Upload videos
+        if (hasVideos && videos != null) {
             List<String> videoUrls = new ArrayList<>();
-            videoUrls.add(videoUrl);
-            post.setVideoUrls(toJson(videoUrls));
+            for (MultipartFile video : videos) {
+                if (video != null && !video.isEmpty()) {
+                    String videoUrl = cloudinaryService.uploadVideo(video, "posts");
+                    videoUrls.add(videoUrl);
+                }
+            }
+            if (!videoUrls.isEmpty()) {
+                post.setVideoUrls(toJson(videoUrls));
+            }
         }
         
         post = postRepository.save(post);
