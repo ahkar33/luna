@@ -7,6 +7,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -58,5 +61,17 @@ public class UserController {
         Long userId = Long.parseLong(authentication.getName());
         List<UserSuggestionResponse> suggestions = userService.getSuggestedUsers(userId, Math.min(limit, 50));
         return ResponseEntity.ok(suggestions);
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search users by username", 
+               description = "Search for users by username. Results are sorted by relevance and popularity.")
+    public ResponseEntity<Page<UserProfileResponse>> searchUsers(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
+        Page<UserProfileResponse> results = userService.searchUsers(q, pageable);
+        return ResponseEntity.ok(results);
     }
 }

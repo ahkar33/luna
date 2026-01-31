@@ -9,7 +9,9 @@ import com.luna.user.repository.UserFollowRepository;
 import com.luna.user.repository.UserRepository;
 import com.luna.user.service.IUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -144,5 +146,16 @@ public class UserServiceImpl implements IUserService {
         }
         
         return suggestions;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserProfileResponse> searchUsers(String query, Pageable pageable) {
+        if (query == null || query.trim().isEmpty()) {
+            return Page.empty(pageable);
+        }
+        
+        Page<User> users = userRepository.searchByUsername(query.trim(), pageable);
+        return users.map(this::mapToUserProfileResponse);
     }
 }

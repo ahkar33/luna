@@ -2,6 +2,8 @@ package com.luna.user.service;
 
 import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.dto.UserSuggestionResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,4 +18,6 @@ public interface IUserService extends UserDetailsService {
     UserProfileResponse getUserProfileByUsername(String username);
     
     List<UserSuggestionResponse> getSuggestedUsers(Long userId, int limit);
+    
+    Page<UserProfileResponse> searchUsers(String query, Pageable pageable);
 }

@@ -1,6 +1,7 @@
 package com.luna.user.repository;
 
 import com.luna.user.entity.User;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +17,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     boolean existsByEmail(String email);
     boolean existsByUsername(String username);
+    
+    // Search users by username (case-insensitive, partial match)
+    @Query("""
+        SELECT u FROM User u 
+        WHERE u.isActive = true AND u.emailVerified = true
+        AND LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%'))
+        ORDER BY 
+            CASE WHEN LOWER(u.username) = LOWER(:query) THEN 0
+                 WHEN LOWER(u.username) LIKE LOWER(CONCAT(:query, '%')) THEN 1
+                 ELSE 2 END,
+            (SELECT COUNT(f) FROM UserFollow f WHERE f.following.id = u.id) DESC
+        """)
+    Page<User> searchByUsername(@Param("query") String query, Pageable pageable);
     
     // Get popular users (most followers) excluding current user
     @Query("""
