@@ -1,6 +1,7 @@
 package com.luna.user.controller;
 
 import com.luna.user.dto.UserProfileResponse;
+import com.luna.user.dto.UserSuggestionResponse;
 import com.luna.user.service.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -11,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -44,5 +47,16 @@ public class UserController {
         Long userId = Long.parseLong(authentication.getName());
         UserProfileResponse response = userService.updateProfileImage(userId, image);
         return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/suggestions")
+    @Operation(summary = "Get suggested users to follow", 
+               description = "Returns user suggestions based on mutual connections or popularity for new users")
+    public ResponseEntity<List<UserSuggestionResponse>> getSuggestedUsers(
+            @RequestParam(defaultValue = "10") int limit,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        List<UserSuggestionResponse> suggestions = userService.getSuggestedUsers(userId, Math.min(limit, 50));
+        return ResponseEntity.ok(suggestions);
     }
 }
