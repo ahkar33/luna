@@ -12,11 +12,14 @@ import com.luna.common.exception.UnauthorizedException;
 import com.luna.common.service.CloudinaryService;
 import com.luna.post.dto.CreatePostRequest;
 import com.luna.post.dto.PostResponse;
+import com.luna.post.dto.RepostResponse;
 import com.luna.post.entity.Post;
 import com.luna.post.entity.PostLike;
+import com.luna.post.entity.Repost;
 import com.luna.post.entity.SavedPost;
 import com.luna.post.repository.PostLikeRepository;
 import com.luna.post.repository.PostRepository;
+import com.luna.post.repository.RepostRepository;
 import com.luna.post.repository.SavedPostRepository;
 import com.luna.post.service.IPostService;
 import com.luna.user.entity.User;
@@ -42,6 +45,7 @@ public class PostServiceImpl implements IPostService {
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
     private final SavedPostRepository savedPostRepository;
+    private final RepostRepository repostRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final IActivityService activityService;
@@ -388,7 +392,9 @@ public class PostServiceImpl implements IPostService {
     
     private PostResponse mapToPostResponse(Post post, Long userId, boolean isLiked) {
         long commentCount = commentRepository.countByPostId(post.getId());
+        long repostCount = repostRepository.countByOriginalPostId(post.getId());
         boolean isSaved = userId != null && savedPostRepository.existsByUserIdAndPostId(userId, post.getId());
+        boolean isReposted = userId != null && repostRepository.existsByUserIdAndOriginalPostId(userId, post.getId());
         
         return PostResponse.builder()
             .id(post.getId())
@@ -404,10 +410,84 @@ public class PostServiceImpl implements IPostService {
                 .build())
             .likeCount(post.getLikeCount())
             .commentCount(commentCount)
+            .repostCount(repostCount)
             .isLikedByCurrentUser(isLiked)
             .isSavedByCurrentUser(isSaved)
+            .isRepostedByCurrentUser(isReposted)
             .createdAt(post.getCreatedAt())
             .updatedAt(post.getUpdatedAt())
+            .build();
+    }
+    
+    @Override
+    @Transactional
+    public RepostResponse repost(Long postId, Long userId, String quote) {
+        Post post = postRepository.findById(postId)
+            .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+        
+        if (post.isDeleted()) {
+            throw new ResourceNotFoundException("Post not found");
+        }
+        
+        if (post.getAuthor().getId().equals(userId)) {
+            throw new BadRequestException("You cannot repost your own post");
+        }
+        
+        if (repostRepository.existsByUserIdAndOriginalPostId(userId, postId)) {
+            throw new BadRequestException("You have already reposted this post");
+        }
+        
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        Repost repost = Repost.builder()
+            .user(user)
+            .originalPost(post)
+            .quote(quote)
+            .build();
+        
+        repost = repostRepository.save(repost);
+        
+        // Log activity
+        activityService.logActivity(userId, ActivityType.LIKE, "REPOST", 
+            postId, post.getAuthor().getId(), null);
+        
+        return mapToRepostResponse(repost, userId);
+    }
+    
+    @Override
+    @Transactional
+    public void undoRepost(Long postId, Long userId) {
+        if (!repostRepository.existsByUserIdAndOriginalPostId(userId, postId)) {
+            throw new BadRequestException("You have not reposted this post");
+        }
+        
+        repostRepository.deleteByUserIdAndOriginalPostId(userId, postId);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<RepostResponse> getUserReposts(Long userId, Long currentUserId, Pageable pageable) {
+        Page<Repost> reposts = repostRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        
+        return reposts.map(repost -> mapToRepostResponse(repost, currentUserId));
+    }
+    
+    private RepostResponse mapToRepostResponse(Repost repost, Long currentUserId) {
+        Post originalPost = repost.getOriginalPost();
+        boolean isLiked = currentUserId != null && 
+            postLikeRepository.existsByPostIdAndUserId(originalPost.getId(), currentUserId);
+        
+        return RepostResponse.builder()
+            .id(repost.getId())
+            .quote(repost.getQuote())
+            .repostedBy(RepostResponse.RepostAuthor.builder()
+                .id(repost.getUser().getId())
+                .username(repost.getUser().getUsername())
+                .profileImageUrl(repost.getUser().getProfileImageUrl())
+                .build())
+            .originalPost(mapToPostResponse(originalPost, currentUserId, isLiked))
+            .createdAt(repost.getCreatedAt())
             .build();
     }
     

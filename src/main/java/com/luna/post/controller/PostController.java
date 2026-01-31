@@ -3,6 +3,8 @@ package com.luna.post.controller;
 import com.luna.auth.dto.MessageResponse;
 import com.luna.post.dto.CreatePostRequest;
 import com.luna.post.dto.PostResponse;
+import com.luna.post.dto.RepostRequest;
+import com.luna.post.dto.RepostResponse;
 import com.luna.post.service.IPostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -148,5 +150,40 @@ public class PostController {
         Pageable pageable = PageRequest.of(page, size);
         Page<PostResponse> posts = postService.getSavedPosts(userId, pageable);
         return ResponseEntity.ok(posts);
+    }
+    
+    @PostMapping("/{postId}/repost")
+    @Operation(summary = "Repost a post", description = "Share someone else's post to your profile with an optional quote")
+    public ResponseEntity<RepostResponse> repost(
+            @PathVariable Long postId,
+            @RequestBody(required = false) RepostRequest request,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        String quote = request != null ? request.getQuote() : null;
+        RepostResponse response = postService.repost(postId, userId, quote);
+        return ResponseEntity.ok(response);
+    }
+    
+    @DeleteMapping("/{postId}/repost")
+    @Operation(summary = "Undo repost")
+    public ResponseEntity<MessageResponse> undoRepost(
+            @PathVariable Long postId,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        postService.undoRepost(postId, userId);
+        return ResponseEntity.ok(new MessageResponse("Repost removed"));
+    }
+    
+    @GetMapping("/user/{userId}/reposts")
+    @Operation(summary = "Get user's reposts")
+    public ResponseEntity<Page<RepostResponse>> getUserReposts(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+        Long currentUserId = Long.parseLong(authentication.getName());
+        Pageable pageable = PageRequest.of(page, size);
+        Page<RepostResponse> reposts = postService.getUserReposts(userId, currentUserId, pageable);
+        return ResponseEntity.ok(reposts);
     }
 }

@@ -2,6 +2,7 @@ package com.luna.post.service;
 
 import com.luna.post.dto.CreatePostRequest;
 import com.luna.post.dto.PostResponse;
+import com.luna.post.dto.RepostResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,4 +34,10 @@ public interface IPostService {
     PostResponse unsavePost(Long postId, Long userId);
     
     Page<PostResponse> getSavedPosts(Long userId, Pageable pageable);
+    
+    RepostResponse repost(Long postId, Long userId, String quote);
+    
+    void undoRepost(Long postId, Long userId);
+    
+    Page<RepostResponse> getUserReposts(Long userId, Long currentUserId, Pageable pageable);
 }

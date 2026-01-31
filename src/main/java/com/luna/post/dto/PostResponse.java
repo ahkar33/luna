@@ -22,8 +22,10 @@ public class PostResponse {
     private AuthorInfo author;
     private Long likeCount;
     private Long commentCount;
+    private Long repostCount;
     private Boolean isLikedByCurrentUser;
     private Boolean isSavedByCurrentUser;
+    private Boolean isRepostedByCurrentUser;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
