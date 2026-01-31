@@ -81,6 +81,8 @@ public class UserServiceImpl implements IUserService {
             .username(user.getUsername())
             .email(user.getEmail())
             .profileImageUrl(user.getProfileImageUrl())
+            .countryCode(user.getCountryCode())
+            .country(user.getCountry())
             .emailVerified(user.getEmailVerified())
             .createdAt(user.getCreatedAt())
             .build();

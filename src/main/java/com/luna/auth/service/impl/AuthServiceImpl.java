@@ -6,6 +6,7 @@ import com.luna.common.exception.BadRequestException;
 import com.luna.common.exception.ResourceNotFoundException;
 import com.luna.common.exception.UnauthorizedException;
 import com.luna.common.service.EmailService;
+import com.luna.common.service.GeoIpService;
 import com.luna.user.entity.*;
 import com.luna.user.repository.*;
 import com.luna.security.JwtService;
@@ -37,15 +38,25 @@ public class AuthServiceImpl implements IAuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final GeoIpService geoIpService;
 
     @Override
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request, String ipAddress) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BadRequestException("Email already exists");
         }
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new BadRequestException("Username already exists");
+        }
+
+        // Detect country from IP
+        String countryCode = null;
+        String country = null;
+        GeoIpService.GeoIpInfo geoInfo = geoIpService.getGeoInfo(ipAddress);
+        if (geoInfo != null) {
+            countryCode = geoInfo.countryCode();
+            country = geoInfo.country();
         }
 
         var user = User.builder()
@@ -55,6 +66,8 @@ public class AuthServiceImpl implements IAuthService {
                 .role(Role.USER)
                 .isActive(false)  // Inactive until email verified
                 .emailVerified(false)
+                .countryCode(countryCode)
+                .country(country)
                 .build();
 
         userRepository.save(user);

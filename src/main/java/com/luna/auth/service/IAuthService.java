@@ -4,7 +4,7 @@ import com.luna.auth.dto.*;
 
 public interface IAuthService {
     
-    AuthResponse register(RegisterRequest request);
+    AuthResponse register(RegisterRequest request, String ipAddress);
     
     LoginResponse login(AuthRequest request, String deviceFingerprint, String ipAddress, String userAgent);
     

@@ -47,6 +47,12 @@ public class User implements UserDetails {
     
     @Column(name = "profile_image_url")
     private String profileImageUrl;
+    
+    @Column(name = "country_code", length = 2)
+    private String countryCode;  // ISO 3166-1 alpha-2 (e.g., "US", "MM")
+    
+    @Column(name = "country")
+    private String country;  // Full country name
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

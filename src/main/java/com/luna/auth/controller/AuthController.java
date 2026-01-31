@@ -44,7 +44,8 @@ public class AuthController {
             throw new BadRequestException("Too many registration attempts. Please try again later.");
         }
         
-        authService.register(request);
+        String ipAddress = getClientIP(httpRequest);
+        authService.register(request, ipAddress);
         return ResponseEntity.ok(ApiResponse.success(
             "Registration successful. Please check your email for verification code."
         ));
