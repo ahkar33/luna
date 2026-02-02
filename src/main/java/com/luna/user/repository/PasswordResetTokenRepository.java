@@ -9,8 +9,10 @@ import java.util.Optional;
 
 @Repository
 public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
-    
+
     Optional<PasswordResetToken> findByOtpAndUserId(String otp, Long userId);
-    
+
     Optional<PasswordResetToken> findFirstByUserIdAndCreatedAtAfterOrderByCreatedAtDesc(Long userId, Instant after);
+
+    Optional<PasswordResetToken> findFirstByUserIdAndVerifiedTrueAndUsedFalseOrderByCreatedAtDesc(Long userId);
 }

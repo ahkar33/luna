@@ -179,28 +179,63 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Object>> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request,
             HttpServletRequest httpRequest) {
-        
+
         // Rate limit by IP + email
         String key = "forgot-password:" + getClientIP(httpRequest) + ":" + request.getEmail();
         Bucket bucket = rateLimitService.resolveBucket(key);
-        
+
         if (!bucket.tryConsume(1)) {
             throw new BadRequestException("Too many requests. Please try again later.");
         }
-        
+
         authService.forgotPassword(request.getEmail());
         return ResponseEntity.ok(ApiResponse.success(
             "Password reset code sent to your email."
         ));
     }
 
-    @PostMapping("/reset-password")
-    @Operation(summary = "Reset password", description = "Resets the password using the OTP sent to email")
+    @PostMapping("/verify-reset-password-otp")
+    @Operation(summary = "Verify password reset OTP", description = "Verifies the OTP sent for password reset")
     @ApiResponses(value = {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "OTP verified successfully"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired OTP")
     })
-    public ResponseEntity<ApiResponse<Object>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<ApiResponse<Object>> verifyResetPasswordOtp(
+            @Valid @RequestBody VerifyResetPasswordOtpRequest request,
+            HttpServletRequest httpRequest) {
+
+        // Rate limit by IP + email
+        String key = "verify-reset-otp:" + getClientIP(httpRequest) + ":" + request.getEmail();
+        Bucket bucket = rateLimitService.resolveBucket(key);
+
+        if (!bucket.tryConsume(1)) {
+            throw new BadRequestException("Too many requests. Please try again later.");
+        }
+
+        authService.verifyResetPasswordOtp(request);
+        return ResponseEntity.ok(ApiResponse.success(
+            "OTP verified successfully. You can now reset your password."
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset password", description = "Resets the password after OTP verification. Must verify OTP first using /verify-reset-password-otp endpoint.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "OTP not verified or expired")
+    })
+    public ResponseEntity<ApiResponse<Object>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request,
+            HttpServletRequest httpRequest) {
+
+        // Rate limit by IP + email
+        String key = "reset-password:" + getClientIP(httpRequest) + ":" + request.getEmail();
+        Bucket bucket = rateLimitService.resolveBucket(key);
+
+        if (!bucket.tryConsume(1)) {
+            throw new BadRequestException("Too many requests. Please try again later.");
+        }
+
         authService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.success(
             "Password reset successfully. You can now login with your new password."

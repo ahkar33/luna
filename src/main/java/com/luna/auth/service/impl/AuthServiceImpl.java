@@ -401,7 +401,7 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     @Transactional
-    public void resetPassword(ResetPasswordRequest request) {
+    public void verifyResetPasswordOtp(VerifyResetPasswordOtpRequest request) {
         var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -412,8 +412,32 @@ public class AuthServiceImpl implements IAuthService {
             throw new BadRequestException("OTP already used");
         }
 
+        if (resetToken.getVerified()) {
+            throw new BadRequestException("OTP already verified");
+        }
+
         if (resetToken.getExpiryDate().isBefore(Instant.now())) {
             throw new BadRequestException("OTP expired");
+        }
+
+        // Mark token as verified
+        resetToken.setVerified(true);
+        passwordResetTokenRepository.save(resetToken);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        var user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Find the verified token
+        var resetToken = passwordResetTokenRepository
+                .findFirstByUserIdAndVerifiedTrueAndUsedFalseOrderByCreatedAtDesc(user.getId())
+                .orElseThrow(() -> new BadRequestException("No verified OTP found. Please verify your OTP first."));
+
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
+            throw new BadRequestException("OTP expired. Please request a new password reset.");
         }
 
         // Update password
