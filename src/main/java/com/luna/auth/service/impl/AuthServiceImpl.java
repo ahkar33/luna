@@ -194,18 +194,25 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     @Transactional
     public AuthResponse refreshToken(String refreshTokenStr) {
-        var refreshToken = refreshTokenRepository.findByToken(refreshTokenStr)
+        var oldRefreshToken = refreshTokenRepository.findByToken(refreshTokenStr)
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
-        if (refreshToken.isRevoked() || refreshToken.getExpiryDate().isBefore(Instant.now())) {
+        if (oldRefreshToken.isRevoked() || oldRefreshToken.getExpiryDate().isBefore(Instant.now())) {
             throw new UnauthorizedException("Refresh token expired or revoked");
         }
 
-        var accessToken = jwtService.generateAccessToken(refreshToken.getUser());
+        // Revoke old refresh token
+        oldRefreshToken.setRevoked(true);
+        refreshTokenRepository.save(oldRefreshToken);
+
+        // Generate new tokens
+        var user = oldRefreshToken.getUser();
+        var accessToken = jwtService.generateAccessToken(user);
+        var newRefreshToken = createRefreshToken(user);
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken.getToken())
+                .refreshToken(newRefreshToken.getToken())
                 .build();
     }
 
