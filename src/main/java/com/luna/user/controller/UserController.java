@@ -1,5 +1,6 @@
 package com.luna.user.controller;
 
+import com.luna.security.SecurityUtils;
 import com.luna.user.dto.UpdateBioRequest;
 import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.dto.UserSuggestionResponse;
@@ -32,7 +33,7 @@ public class UserController {
     @GetMapping("/profile")
     @Operation(summary = "Get current user profile")
     public ResponseEntity<UserProfileResponse> getCurrentUserProfile(Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         UserProfileResponse response = userService.getUserProfile(userId);
         return ResponseEntity.ok(response);
     }
@@ -49,7 +50,7 @@ public class UserController {
     public ResponseEntity<UserProfileResponse> updateProfileImage(
             @RequestPart MultipartFile image,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         UserProfileResponse response = userService.updateProfileImage(userId, image);
         return ResponseEntity.ok(response);
     }
@@ -59,7 +60,7 @@ public class UserController {
     public ResponseEntity<UserProfileResponse> updateBio(
             @Valid @RequestBody UpdateBioRequest request,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         UserProfileResponse response = userService.updateBio(userId, request.getBio());
         return ResponseEntity.ok(response);
     }
@@ -70,7 +71,7 @@ public class UserController {
     public ResponseEntity<List<UserSuggestionResponse>> getSuggestedUsers(
             @RequestParam(defaultValue = "10") int limit,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         List<UserSuggestionResponse> suggestions = userService.getSuggestedUsers(userId, Math.min(limit, 50));
         return ResponseEntity.ok(suggestions);
     }

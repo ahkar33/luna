@@ -6,6 +6,7 @@ import com.luna.post.dto.PostResponse;
 import com.luna.post.dto.RepostRequest;
 import com.luna.post.dto.RepostResponse;
 import com.luna.post.service.IPostService;
+import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,7 +41,7 @@ public class PostController {
             @RequestPart(required = false) List<MultipartFile> images,
             @RequestPart(required = false) List<MultipartFile> videos,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.createPost(request, userId, images, videos);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -50,7 +51,7 @@ public class PostController {
     public ResponseEntity<PostResponse> getPost(
             @PathVariable Long postId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.getPostById(postId, userId);
         return ResponseEntity.ok(response);
     }
@@ -62,7 +63,7 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
-        Long currentUserId = Long.parseLong(authentication.getName());
+        Long currentUserId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<PostResponse> posts = postService.getUserPosts(userId, currentUserId, pageable);
         return ResponseEntity.ok(posts);
@@ -74,7 +75,7 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<PostResponse> posts = postService.getTimelinePosts(userId, pageable);
         return ResponseEntity.ok(posts);
@@ -85,7 +86,7 @@ public class PostController {
     public ResponseEntity<MessageResponse> deletePost(
             @PathVariable Long postId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         postService.deletePost(postId, userId);
         return ResponseEntity.ok(new MessageResponse("Post deleted successfully. You can restore it within 30 days."));
     }
@@ -95,7 +96,7 @@ public class PostController {
     public ResponseEntity<MessageResponse> restorePost(
             @PathVariable Long postId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         postService.restorePost(postId, userId);
         return ResponseEntity.ok(new MessageResponse("Post restored successfully"));
     }
@@ -105,7 +106,7 @@ public class PostController {
     public ResponseEntity<PostResponse> likePost(
             @PathVariable Long postId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.likePost(postId, userId);
         return ResponseEntity.ok(response);
     }
@@ -115,7 +116,7 @@ public class PostController {
     public ResponseEntity<PostResponse> unlikePost(
             @PathVariable Long postId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.unlikePost(postId, userId);
         return ResponseEntity.ok(response);
     }
@@ -125,7 +126,7 @@ public class PostController {
     public ResponseEntity<PostResponse> savePost(
             @PathVariable Long postId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.savePost(postId, userId);
         return ResponseEntity.ok(response);
     }
@@ -135,7 +136,7 @@ public class PostController {
     public ResponseEntity<PostResponse> unsavePost(
             @PathVariable Long postId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.unsavePost(postId, userId);
         return ResponseEntity.ok(response);
     }
@@ -146,7 +147,7 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<PostResponse> posts = postService.getSavedPosts(userId, pageable);
         return ResponseEntity.ok(posts);
@@ -158,7 +159,7 @@ public class PostController {
             @PathVariable Long postId,
             @RequestBody(required = false) RepostRequest request,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         String quote = request != null ? request.getQuote() : null;
         RepostResponse response = postService.repost(postId, userId, quote);
         return ResponseEntity.ok(response);
@@ -169,7 +170,7 @@ public class PostController {
     public ResponseEntity<MessageResponse> undoRepost(
             @PathVariable Long postId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         postService.undoRepost(postId, userId);
         return ResponseEntity.ok(new MessageResponse("Repost removed"));
     }
@@ -181,7 +182,7 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
-        Long currentUserId = Long.parseLong(authentication.getName());
+        Long currentUserId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<RepostResponse> reposts = postService.getUserReposts(userId, currentUserId, pageable);
         return ResponseEntity.ok(reposts);

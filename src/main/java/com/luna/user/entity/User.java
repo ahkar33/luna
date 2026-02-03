@@ -95,4 +95,13 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return isActive != null && isActive;
     }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+    public String getUsernameField() {
+        return username;
+    }
 }

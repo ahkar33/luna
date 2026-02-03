@@ -4,12 +4,15 @@ import com.luna.activity.entity.ActivityType;
 import com.luna.activity.service.IActivityService;
 import com.luna.common.exception.BadRequestException;
 import com.luna.common.exception.ResourceNotFoundException;
+import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.entity.User;
 import com.luna.user.entity.UserFollow;
 import com.luna.user.repository.UserFollowRepository;
 import com.luna.user.repository.UserRepository;
 import com.luna.user.service.IFollowService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,5 +86,55 @@ public class FollowServiceImpl implements IFollowService {
     @Override
     public long getFollowingCount(Long userId) {
         return userFollowRepository.countByFollowerId(userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserProfileResponse> getFollowers(Long userId, Pageable pageable) {
+        // Verify user exists
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        Page<User> followers = userFollowRepository.findFollowersByUserId(userId, pageable);
+        return followers.map(this::mapToUserProfileResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserProfileResponse> getFollowing(Long userId, Pageable pageable) {
+        // Verify user exists
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        Page<User> following = userFollowRepository.findFollowingByUserId(userId, pageable);
+        return following.map(this::mapToUserProfileResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserProfileResponse> getMutualFriends(Long userId, Pageable pageable) {
+        // Verify user exists
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found");
+        }
+
+        Page<User> mutualFriends = userFollowRepository.findMutualFriends(userId, pageable);
+        return mutualFriends.map(this::mapToUserProfileResponse);
+    }
+
+    private UserProfileResponse mapToUserProfileResponse(User user) {
+        return UserProfileResponse.builder()
+            .id(user.getId())
+            .username(user.getUsernameField())
+            .email(user.getEmail())
+            .profileImageUrl(user.getProfileImageUrl())
+            .bio(user.getBio())
+            .countryCode(user.getCountryCode())
+            .country(user.getCountry())
+            .emailVerified(user.getEmailVerified())
+            .createdAt(user.getCreatedAt())
+            .build();
     }
 }

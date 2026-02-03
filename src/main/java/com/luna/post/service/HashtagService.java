@@ -156,7 +156,7 @@ public class HashtagService {
             .videoUrls(fromJson(post.getVideoUrls()))
             .author(PostResponse.AuthorInfo.builder()
                 .id(post.getAuthor().getId())
-                .username(post.getAuthor().getUsername())
+                .username(post.getAuthor().getUsernameField())
                 .email(post.getAuthor().getEmail())
                 .profileImageUrl(post.getAuthor().getProfileImageUrl())
                 .build())

@@ -67,3 +67,8 @@ src/main/java/com/luna/
 ## API Documentation
 
 Swagger UI available at `/swagger-ui.html` when running locally. OpenAPI spec at `/api-docs`.
+
+# Project Memory
+
+- Always consider backward compatibility when changing APIs.
+- Prefer additive changes over destructive ones.

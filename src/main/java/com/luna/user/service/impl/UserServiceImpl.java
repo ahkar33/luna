@@ -33,7 +33,10 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Try to find by email first (new behavior)
         return userRepository.findByEmail(username)
+                // Fall back to finding by username field for backward compatibility with old tokens
+                .or(() -> userRepository.findByUsername(username))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
     
@@ -92,7 +95,7 @@ public class UserServiceImpl implements IUserService {
     private UserProfileResponse mapToUserProfileResponse(User user) {
         return UserProfileResponse.builder()
             .id(user.getId())
-            .username(user.getUsername())
+            .username(user.getUsernameField())
             .email(user.getEmail())
             .profileImageUrl(user.getProfileImageUrl())
             .bio(user.getBio())
@@ -120,15 +123,15 @@ public class UserServiceImpl implements IUserService {
                 if (addedUserIds.add(user.getId())) {
                     int mutualCount = userFollowRepository.countMutualConnections(userId, user.getId());
                     long followerCount = userFollowRepository.countByFollowingId(user.getId());
-                    
+
                     suggestions.add(UserSuggestionResponse.builder()
                         .id(user.getId())
-                        .username(user.getUsername())
+                        .username(user.getUsernameField())
                         .profileImageUrl(user.getProfileImageUrl())
                         .followerCount(followerCount)
                         .mutualConnections(mutualCount)
-                        .suggestionReason(mutualCount > 0 
-                            ? "Followed by " + mutualCount + " people you follow" 
+                        .suggestionReason(mutualCount > 0
+                            ? "Followed by " + mutualCount + " people you follow"
                             : "You might know")
                         .build());
                 }
@@ -142,13 +145,13 @@ public class UserServiceImpl implements IUserService {
             
             for (User user : popularUsers) {
                 if (suggestions.size() >= limit) break;
-                
+
                 if (addedUserIds.add(user.getId())) {
                     long followerCount = userFollowRepository.countByFollowingId(user.getId());
-                    
+
                     suggestions.add(UserSuggestionResponse.builder()
                         .id(user.getId())
-                        .username(user.getUsername())
+                        .username(user.getUsernameField())
                         .profileImageUrl(user.getProfileImageUrl())
                         .followerCount(followerCount)
                         .mutualConnections(0)

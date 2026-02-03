@@ -4,6 +4,7 @@ import com.luna.auth.dto.MessageResponse;
 import com.luna.comment.dto.CommentResponse;
 import com.luna.comment.dto.CreateCommentRequest;
 import com.luna.comment.service.ICommentService;
+import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,7 +34,7 @@ public class CommentController {
             @PathVariable Long postId,
             @Valid @RequestBody CreateCommentRequest request,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         CommentResponse response = commentService.createComment(postId, userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -63,7 +64,7 @@ public class CommentController {
             @PathVariable Long commentId,
             @Valid @RequestBody CreateCommentRequest request,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         CommentResponse response = commentService.updateComment(commentId, userId, request.getContent());
         return ResponseEntity.ok(response);
     }
@@ -73,7 +74,7 @@ public class CommentController {
     public ResponseEntity<MessageResponse> deleteComment(
             @PathVariable Long commentId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         commentService.deleteComment(commentId, userId);
         return ResponseEntity.ok(new MessageResponse("Comment deleted successfully"));
     }

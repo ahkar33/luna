@@ -3,6 +3,7 @@ package com.luna.post.controller;
 import com.luna.post.dto.HashtagResponse;
 import com.luna.post.dto.PostResponse;
 import com.luna.post.service.HashtagService;
+import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,7 +50,7 @@ public class HashtagController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<PostResponse> posts = hashtagService.getPostsByHashtag(hashtag, userId, pageable);
         return ResponseEntity.ok(posts);

@@ -143,7 +143,7 @@ public class CommentServiceImpl implements ICommentService {
             .content(comment.getContent())
             .author(CommentResponse.AuthorInfo.builder()
                 .id(comment.getAuthor().getId())
-                .username(comment.getAuthor().getUsername())
+                .username(comment.getAuthor().getUsernameField())
                 .profileImageUrl(comment.getAuthor().getProfileImageUrl())
                 .build())
             .postId(comment.getPost().getId())

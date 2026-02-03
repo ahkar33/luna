@@ -82,7 +82,7 @@ public class ActivityServiceImpl implements IActivityService {
             .id(activity.getId())
             .user(ActivityResponse.UserInfo.builder()
                 .id(activity.getUser().getId())
-                .username(activity.getUser().getUsername())
+                .username(activity.getUser().getUsernameField())
                 .email(activity.getUser().getEmail())
                 .build())
             .activityType(activity.getActivityType())

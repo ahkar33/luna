@@ -3,6 +3,7 @@ package com.luna.activity.controller;
 import com.luna.activity.dto.ActivityResponse;
 import com.luna.activity.entity.ActivityType;
 import com.luna.activity.service.IActivityService;
+import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +30,7 @@ public class ActivityController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<ActivityResponse> activities = activityService.getUserActivities(userId, pageable);
         return ResponseEntity.ok(activities);
@@ -42,7 +43,7 @@ public class ActivityController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<ActivityResponse> activities = activityService
             .getUserActivitiesByType(userId, activityType, pageable);
