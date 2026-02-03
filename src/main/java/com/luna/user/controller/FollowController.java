@@ -1,6 +1,7 @@
 package com.luna.user.controller;
 
 import com.luna.auth.dto.MessageResponse;
+import com.luna.common.dto.PagedResponse;
 import com.luna.security.SecurityUtils;
 import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.service.IFollowService;
@@ -77,36 +78,36 @@ public class FollowController {
     @GetMapping("/{userId}/followers")
     @Operation(summary = "Get list of followers",
                description = "Returns paginated list of users who follow the specified user")
-    public ResponseEntity<Page<UserProfileResponse>> getFollowers(
+    public ResponseEntity<PagedResponse<UserProfileResponse>> getFollowers(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> followers = followService.getFollowers(userId, pageable);
-        return ResponseEntity.ok(followers);
+        return ResponseEntity.ok(PagedResponse.of(followers));
     }
 
     @GetMapping("/{userId}/following")
     @Operation(summary = "Get list of following",
                description = "Returns paginated list of users that the specified user follows")
-    public ResponseEntity<Page<UserProfileResponse>> getFollowing(
+    public ResponseEntity<PagedResponse<UserProfileResponse>> getFollowing(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> following = followService.getFollowing(userId, pageable);
-        return ResponseEntity.ok(following);
+        return ResponseEntity.ok(PagedResponse.of(following));
     }
 
     @GetMapping("/{userId}/mutual-friends")
     @Operation(summary = "Get mutual friends",
                description = "Returns paginated list of users who both follow each other with the specified user")
-    public ResponseEntity<Page<UserProfileResponse>> getMutualFriends(
+    public ResponseEntity<PagedResponse<UserProfileResponse>> getMutualFriends(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> mutualFriends = followService.getMutualFriends(userId, pageable);
-        return ResponseEntity.ok(mutualFriends);
+        return ResponseEntity.ok(PagedResponse.of(mutualFriends));
     }
 }

@@ -3,6 +3,7 @@ package com.luna.activity.controller;
 import com.luna.activity.dto.ActivityResponse;
 import com.luna.activity.entity.ActivityType;
 import com.luna.activity.service.IActivityService;
+import com.luna.common.dto.PagedResponse;
 import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -26,19 +27,19 @@ public class ActivityController {
     
     @GetMapping("/me")
     @Operation(summary = "Get current user's activities")
-    public ResponseEntity<Page<ActivityResponse>> getMyActivities(
+    public ResponseEntity<PagedResponse<ActivityResponse>> getMyActivities(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<ActivityResponse> activities = activityService.getUserActivities(userId, pageable);
-        return ResponseEntity.ok(activities);
+        return ResponseEntity.ok(PagedResponse.of(activities));
     }
     
     @GetMapping("/me/type/{activityType}")
     @Operation(summary = "Get current user's activities by type")
-    public ResponseEntity<Page<ActivityResponse>> getMyActivitiesByType(
+    public ResponseEntity<PagedResponse<ActivityResponse>> getMyActivitiesByType(
             @PathVariable ActivityType activityType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -47,17 +48,17 @@ public class ActivityController {
         Pageable pageable = PageRequest.of(page, size);
         Page<ActivityResponse> activities = activityService
             .getUserActivitiesByType(userId, activityType, pageable);
-        return ResponseEntity.ok(activities);
+        return ResponseEntity.ok(PagedResponse.of(activities));
     }
     
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get activities for a specific user (activities on their content)")
-    public ResponseEntity<Page<ActivityResponse>> getActivitiesForUser(
+    public ResponseEntity<PagedResponse<ActivityResponse>> getActivitiesForUser(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<ActivityResponse> activities = activityService.getActivitiesForUser(userId, pageable);
-        return ResponseEntity.ok(activities);
+        return ResponseEntity.ok(PagedResponse.of(activities));
     }
 }

@@ -1,5 +1,6 @@
 package com.luna.post.controller;
 
+import com.luna.common.dto.PagedResponse;
 import com.luna.post.dto.HashtagResponse;
 import com.luna.post.dto.PostResponse;
 import com.luna.post.service.HashtagService;
@@ -45,7 +46,7 @@ public class HashtagController {
     
     @GetMapping("/{hashtag}/posts")
     @Operation(summary = "Get posts by hashtag", description = "Returns posts containing the specified hashtag")
-    public ResponseEntity<Page<PostResponse>> getPostsByHashtag(
+    public ResponseEntity<PagedResponse<PostResponse>> getPostsByHashtag(
             @PathVariable String hashtag,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -53,6 +54,6 @@ public class HashtagController {
         Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<PostResponse> posts = hashtagService.getPostsByHashtag(hashtag, userId, pageable);
-        return ResponseEntity.ok(posts);
+        return ResponseEntity.ok(PagedResponse.of(posts));
     }
 }

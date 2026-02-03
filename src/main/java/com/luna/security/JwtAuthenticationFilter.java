@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -22,12 +24,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
+    // Public endpoints that should skip JWT validation
+    private static final List<String> PUBLIC_PATHS = Arrays.asList(
+            "/api/auth/",
+            "/health",
+            "/swagger-ui",
+            "/api-docs",
+            "/internal/"
+    );
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+        final String requestPath = request.getRequestURI();
+
+        // Skip JWT validation for public endpoints
+        if (isPublicPath(requestPath)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String username;
@@ -54,5 +73,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isPublicPath(String requestPath) {
+        return PUBLIC_PATHS.stream().anyMatch(requestPath::startsWith);
     }
 }

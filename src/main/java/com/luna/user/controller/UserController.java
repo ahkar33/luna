@@ -1,5 +1,6 @@
 package com.luna.user.controller;
 
+import com.luna.common.dto.PagedResponse;
 import com.luna.security.SecurityUtils;
 import com.luna.user.dto.UpdateBioRequest;
 import com.luna.user.dto.UserProfileResponse;
@@ -77,14 +78,14 @@ public class UserController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Search users by username", 
+    @Operation(summary = "Search users by username",
                description = "Search for users by username. Results are sorted by relevance and popularity.")
-    public ResponseEntity<Page<UserProfileResponse>> searchUsers(
+    public ResponseEntity<PagedResponse<UserProfileResponse>> searchUsers(
             @RequestParam String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> results = userService.searchUsers(q, pageable);
-        return ResponseEntity.ok(results);
+        return ResponseEntity.ok(PagedResponse.of(results));
     }
 }

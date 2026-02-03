@@ -1,6 +1,7 @@
 package com.luna.post.controller;
 
 import com.luna.auth.dto.MessageResponse;
+import com.luna.common.dto.PagedResponse;
 import com.luna.post.dto.CreatePostRequest;
 import com.luna.post.dto.PostResponse;
 import com.luna.post.dto.RepostRequest;
@@ -58,7 +59,7 @@ public class PostController {
     
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get posts by user")
-    public ResponseEntity<Page<PostResponse>> getUserPosts(
+    public ResponseEntity<PagedResponse<PostResponse>> getUserPosts(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -66,19 +67,19 @@ public class PostController {
         Long currentUserId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<PostResponse> posts = postService.getUserPosts(userId, currentUserId, pageable);
-        return ResponseEntity.ok(posts);
+        return ResponseEntity.ok(PagedResponse.of(posts));
     }
     
     @GetMapping("/timeline")
     @Operation(summary = "Get timeline posts from followed users")
-    public ResponseEntity<Page<PostResponse>> getTimelinePosts(
+    public ResponseEntity<PagedResponse<PostResponse>> getTimelinePosts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<PostResponse> posts = postService.getTimelinePosts(userId, pageable);
-        return ResponseEntity.ok(posts);
+        return ResponseEntity.ok(PagedResponse.of(posts));
     }
     
     @DeleteMapping("/{postId}")
@@ -143,14 +144,14 @@ public class PostController {
     
     @GetMapping("/saved")
     @Operation(summary = "Get saved posts")
-    public ResponseEntity<Page<PostResponse>> getSavedPosts(
+    public ResponseEntity<PagedResponse<PostResponse>> getSavedPosts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<PostResponse> posts = postService.getSavedPosts(userId, pageable);
-        return ResponseEntity.ok(posts);
+        return ResponseEntity.ok(PagedResponse.of(posts));
     }
     
     @PostMapping("/{postId}/repost")
@@ -177,7 +178,7 @@ public class PostController {
     
     @GetMapping("/user/{userId}/reposts")
     @Operation(summary = "Get user's reposts")
-    public ResponseEntity<Page<RepostResponse>> getUserReposts(
+    public ResponseEntity<PagedResponse<RepostResponse>> getUserReposts(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -185,6 +186,6 @@ public class PostController {
         Long currentUserId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<RepostResponse> reposts = postService.getUserReposts(userId, currentUserId, pageable);
-        return ResponseEntity.ok(reposts);
+        return ResponseEntity.ok(PagedResponse.of(reposts));
     }
 }

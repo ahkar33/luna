@@ -4,6 +4,7 @@ import com.luna.auth.dto.MessageResponse;
 import com.luna.comment.dto.CommentResponse;
 import com.luna.comment.dto.CreateCommentRequest;
 import com.luna.comment.service.ICommentService;
+import com.luna.common.dto.PagedResponse;
 import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -40,15 +41,15 @@ public class CommentController {
     }
 
     @GetMapping("/posts/{postId}/comments")
-    @Operation(summary = "Get comments for a post", 
+    @Operation(summary = "Get comments for a post",
                description = "Returns paginated top-level comments with nested replies")
-    public ResponseEntity<Page<CommentResponse>> getPostComments(
+    public ResponseEntity<PagedResponse<CommentResponse>> getPostComments(
             @PathVariable Long postId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<CommentResponse> comments = commentService.getPostComments(postId, pageable);
-        return ResponseEntity.ok(comments);
+        return ResponseEntity.ok(PagedResponse.of(comments));
     }
 
     @GetMapping("/comments/{commentId}")
