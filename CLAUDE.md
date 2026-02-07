@@ -51,6 +51,7 @@ src/main/java/com/luna/
 - **Migrations:** `src/main/resources/db/migration/` (V1-V14, Flyway versioned)
 
 **Required environment variables:**
+
 - `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` - PostgreSQL connection
 - `JWT_SECRET` - Minimum 256 bits for production
 - `MAIL_*` - SMTP configuration for OTP emails
@@ -70,5 +71,5 @@ Swagger UI available at `/swagger-ui.html` when running locally. OpenAPI spec at
 
 # Project Memory
 
-- Always consider backward compatibility when changing APIs.
+- Always consider backward compatibility when changing or developing or implementings or fixing APIs.
 - Prefer additive changes over destructive ones.
