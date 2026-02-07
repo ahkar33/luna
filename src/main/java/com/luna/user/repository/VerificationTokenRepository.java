@@ -4,6 +4,8 @@ import com.luna.user.entity.VerificationToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Instant;
 import java.util.Optional;
 
@@ -12,4 +14,7 @@ public interface VerificationTokenRepository extends JpaRepository<VerificationT
     Optional<VerificationToken> findByToken(String token);
     Optional<VerificationToken> findByOtpAndUserId(String otp, Long userId);
     Optional<VerificationToken> findFirstByUserIdAndCreatedAtAfterOrderByCreatedAtDesc(Long userId, Instant createdAfter);
+
+    @Transactional
+    int deleteByCreatedAtBefore(Instant cutoff);
 }

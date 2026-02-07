@@ -57,7 +57,18 @@ public class AuthController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired OTP")
     })
-    public ResponseEntity<ApiResponse<Object>> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+    public ResponseEntity<ApiResponse<Object>> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request,
+            HttpServletRequest httpRequest) {
+
+        // Rate limit by IP + email
+        String key = "verify-email:" + getClientIP(httpRequest) + ":" + request.getEmail();
+        Bucket bucket = rateLimitService.resolveBucket(key);
+
+        if (!bucket.tryConsume(1)) {
+            throw new BadRequestException("Too many verification attempts. Please try again later.");
+        }
+
         authService.verifyEmail(request);
         return ResponseEntity.ok(ApiResponse.success(
             "Email verified successfully. You can now login."
@@ -128,7 +139,18 @@ public class AuthController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Device verified successfully"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired OTP")
     })
-    public ResponseEntity<ApiResponse<AuthResponse>> verifyDevice(@Valid @RequestBody VerifyDeviceRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyDevice(
+            @Valid @RequestBody VerifyDeviceRequest request,
+            HttpServletRequest httpRequest) {
+
+        // Rate limit by IP + email
+        String key = "verify-device:" + getClientIP(httpRequest) + ":" + request.getEmail();
+        Bucket bucket = rateLimitService.resolveBucket(key);
+
+        if (!bucket.tryConsume(1)) {
+            throw new BadRequestException("Too many verification attempts. Please try again later.");
+        }
+
         AuthResponse response = authService.verifyDevice(request);
         return ResponseEntity.ok(ApiResponse.success(response, "Device verified successfully"));
     }

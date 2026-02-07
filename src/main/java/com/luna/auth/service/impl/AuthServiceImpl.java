@@ -292,10 +292,7 @@ public class AuthServiceImpl implements IAuthService {
 
         // Find the most recent device verification token to get device fingerprint
         var recentDeviceToken = deviceVerificationTokenRepository
-                .findAll()
-                .stream()
-                .filter(token -> token.getUser().getId().equals(user.getId()))
-                .max((t1, t2) -> t1.getCreatedAt().compareTo(t2.getCreatedAt()))
+                .findFirstByUserIdOrderByCreatedAtDesc(user.getId())
                 .orElseThrow(() -> new BadRequestException("No pending device verification found"));
 
         String deviceFingerprint = recentDeviceToken.getDeviceFingerprint();

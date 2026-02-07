@@ -4,6 +4,8 @@ import com.luna.user.entity.PasswordResetToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Instant;
 import java.util.Optional;
 
@@ -15,4 +17,7 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     Optional<PasswordResetToken> findFirstByUserIdAndCreatedAtAfterOrderByCreatedAtDesc(Long userId, Instant after);
 
     Optional<PasswordResetToken> findFirstByUserIdAndVerifiedTrueAndUsedFalseOrderByCreatedAtDesc(Long userId);
+
+    @Transactional
+    int deleteByCreatedAtBefore(Instant cutoff);
 }
