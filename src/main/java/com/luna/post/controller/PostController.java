@@ -9,6 +9,7 @@ import com.luna.post.dto.RepostResponse;
 import com.luna.post.service.IPostService;
 import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -39,8 +40,8 @@ public class PostController {
                description = "Upload unlimited images (max 50MB total) OR unlimited videos (max 100MB total). Cannot mix images and videos.")
     public ResponseEntity<PostResponse> createPost(
             @Valid @ModelAttribute CreatePostRequest request,
-            @RequestPart(required = false) List<MultipartFile> images,
-            @RequestPart(required = false) List<MultipartFile> videos,
+            @RequestPart(name = "images", required = false) List<MultipartFile> images,
+            @RequestPart(name = "videos", required = false) List<MultipartFile> videos,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.createPost(request, userId, images, videos);
@@ -50,7 +51,7 @@ public class PostController {
     @GetMapping("/{postId}")
     @Operation(summary = "Get post by ID")
     public ResponseEntity<PostResponse> getPost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.getPostById(postId, userId);
@@ -60,9 +61,9 @@ public class PostController {
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get posts by user")
     public ResponseEntity<PagedResponse<PostResponse>> getUserPosts(
-            @PathVariable Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @PathVariable("userId") Long userId,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of posts per page") @RequestParam(name = "size", defaultValue = "10") int size,
             Authentication authentication) {
         Long currentUserId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
@@ -73,8 +74,8 @@ public class PostController {
     @GetMapping("/timeline")
     @Operation(summary = "Get timeline posts from followed users")
     public ResponseEntity<PagedResponse<PostResponse>> getTimelinePosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of posts per page") @RequestParam(name = "size", defaultValue = "10") int size,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
@@ -85,7 +86,7 @@ public class PostController {
     @DeleteMapping("/{postId}")
     @Operation(summary = "Soft delete a post (can be restored within 30 days)")
     public ResponseEntity<MessageResponse> deletePost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         postService.deletePost(postId, userId);
@@ -95,7 +96,7 @@ public class PostController {
     @PostMapping("/{postId}/restore")
     @Operation(summary = "Restore a soft-deleted post")
     public ResponseEntity<MessageResponse> restorePost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         postService.restorePost(postId, userId);
@@ -105,7 +106,7 @@ public class PostController {
     @PostMapping("/{postId}/like")
     @Operation(summary = "Like a post")
     public ResponseEntity<PostResponse> likePost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.likePost(postId, userId);
@@ -115,7 +116,7 @@ public class PostController {
     @DeleteMapping("/{postId}/like")
     @Operation(summary = "Unlike a post")
     public ResponseEntity<PostResponse> unlikePost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.unlikePost(postId, userId);
@@ -125,7 +126,7 @@ public class PostController {
     @PostMapping("/{postId}/save")
     @Operation(summary = "Save a post for later")
     public ResponseEntity<PostResponse> savePost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.savePost(postId, userId);
@@ -135,7 +136,7 @@ public class PostController {
     @DeleteMapping("/{postId}/save")
     @Operation(summary = "Unsave a post")
     public ResponseEntity<PostResponse> unsavePost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         PostResponse response = postService.unsavePost(postId, userId);
@@ -145,8 +146,8 @@ public class PostController {
     @GetMapping("/saved")
     @Operation(summary = "Get saved posts")
     public ResponseEntity<PagedResponse<PostResponse>> getSavedPosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of posts per page") @RequestParam(name = "size", defaultValue = "10") int size,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
@@ -157,7 +158,7 @@ public class PostController {
     @PostMapping("/{postId}/repost")
     @Operation(summary = "Repost a post", description = "Share someone else's post to your profile with an optional quote")
     public ResponseEntity<RepostResponse> repost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             @RequestBody(required = false) RepostRequest request,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
@@ -169,7 +170,7 @@ public class PostController {
     @DeleteMapping("/{postId}/repost")
     @Operation(summary = "Undo repost")
     public ResponseEntity<MessageResponse> undoRepost(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         postService.undoRepost(postId, userId);
@@ -179,9 +180,9 @@ public class PostController {
     @GetMapping("/user/{userId}/reposts")
     @Operation(summary = "Get user's reposts")
     public ResponseEntity<PagedResponse<RepostResponse>> getUserReposts(
-            @PathVariable Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @PathVariable("userId") Long userId,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of reposts per page") @RequestParam(name = "size", defaultValue = "10") int size,
             Authentication authentication) {
         Long currentUserId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);

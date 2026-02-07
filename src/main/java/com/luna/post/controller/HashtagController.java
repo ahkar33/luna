@@ -6,6 +6,7 @@ import com.luna.post.dto.PostResponse;
 import com.luna.post.service.HashtagService;
 import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class HashtagController {
     @GetMapping("/trending")
     @Operation(summary = "Get trending hashtags", description = "Returns most used hashtags in the last 24 hours")
     public ResponseEntity<List<HashtagResponse>> getTrendingHashtags(
-            @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Maximum number of hashtags to return") @RequestParam(name = "limit", defaultValue = "10") int limit) {
         List<HashtagResponse> trending = hashtagService.getTrendingHashtags(Math.min(limit, 50));
         return ResponseEntity.ok(trending);
     }
@@ -38,8 +39,8 @@ public class HashtagController {
     @GetMapping("/search")
     @Operation(summary = "Search hashtags", description = "Search hashtags by prefix")
     public ResponseEntity<List<HashtagResponse>> searchHashtags(
-            @RequestParam String q,
-            @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "Search query") @RequestParam(name = "q") String q,
+            @Parameter(description = "Maximum number of results to return") @RequestParam(name = "limit", defaultValue = "10") int limit) {
         List<HashtagResponse> results = hashtagService.searchHashtags(q, Math.min(limit, 50));
         return ResponseEntity.ok(results);
     }
@@ -47,9 +48,9 @@ public class HashtagController {
     @GetMapping("/{hashtag}/posts")
     @Operation(summary = "Get posts by hashtag", description = "Returns posts containing the specified hashtag")
     public ResponseEntity<PagedResponse<PostResponse>> getPostsByHashtag(
-            @PathVariable String hashtag,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @PathVariable("hashtag") String hashtag,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of posts per page") @RequestParam(name = "size", defaultValue = "10") int size,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));

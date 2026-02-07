@@ -16,11 +16,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:none}  # Flyway handles all schema management
-    show-sql: ${JPA_SHOW_SQL:true}
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        '[format_sql]': true
+        '[format_sql]': false
         jdbc:
           batch_size: 0  # Disable batching for PgBouncer compatibility
 
@@ -86,3 +86,5 @@ app:
 logging:
   level:
     org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
+    org.hibernate.SQL: ERROR  # Disable Hibernate SQL logs
+    org.hibernate.type.descriptor.sql.BasicBinder: ERROR  # Disable SQL parameter binding logs

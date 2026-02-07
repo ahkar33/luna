@@ -6,6 +6,7 @@ import com.luna.activity.service.IActivityService;
 import com.luna.common.dto.PagedResponse;
 import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +29,8 @@ public class ActivityController {
     @GetMapping("/me")
     @Operation(summary = "Get current user's activities")
     public ResponseEntity<PagedResponse<ActivityResponse>> getMyActivities(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of activities per page") @RequestParam(name = "size", defaultValue = "20") int size,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
@@ -40,9 +41,9 @@ public class ActivityController {
     @GetMapping("/me/type/{activityType}")
     @Operation(summary = "Get current user's activities by type")
     public ResponseEntity<PagedResponse<ActivityResponse>> getMyActivitiesByType(
-            @PathVariable ActivityType activityType,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @PathVariable("activityType") ActivityType activityType,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of activities per page") @RequestParam(name = "size", defaultValue = "20") int size,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
@@ -54,9 +55,9 @@ public class ActivityController {
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get activities for a specific user (activities on their content)")
     public ResponseEntity<PagedResponse<ActivityResponse>> getActivitiesForUser(
-            @PathVariable Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @PathVariable("userId") Long userId,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of activities per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<ActivityResponse> activities = activityService.getActivitiesForUser(userId, pageable);
         return ResponseEntity.ok(PagedResponse.of(activities));

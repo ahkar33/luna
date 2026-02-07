@@ -6,6 +6,7 @@ import com.luna.security.SecurityUtils;
 import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.service.IFollowService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -22,54 +23,54 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Follow", description = "User follow/unfollow operations")
 @SecurityRequirement(name = "bearerAuth")
 public class FollowController {
-    
+
     private final IFollowService followService;
-    
+
     @PostMapping("/{userId}/follow")
     @Operation(summary = "Follow a user")
     public ResponseEntity<MessageResponse> followUser(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             Authentication authentication) {
         Long currentUserId = SecurityUtils.getUserId(authentication);
         followService.followUser(currentUserId, userId);
         return ResponseEntity.ok(new MessageResponse("Successfully followed user"));
     }
-    
+
     @DeleteMapping("/{userId}/follow")
     @Operation(summary = "Unfollow a user")
     public ResponseEntity<MessageResponse> unfollowUser(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             Authentication authentication) {
         Long currentUserId = SecurityUtils.getUserId(authentication);
         followService.unfollowUser(currentUserId, userId);
         return ResponseEntity.ok(new MessageResponse("Successfully unfollowed user"));
     }
-    
+
     @GetMapping("/{userId}/followers/count")
     @Operation(summary = "Get follower count")
-    public ResponseEntity<Long> getFollowerCount(@PathVariable Long userId) {
+    public ResponseEntity<Long> getFollowerCount(@PathVariable("userId") Long userId) {
         return ResponseEntity.ok(followService.getFollowerCount(userId));
     }
-    
+
     @GetMapping("/{userId}/following/count")
     @Operation(summary = "Get following count")
-    public ResponseEntity<Long> getFollowingCount(@PathVariable Long userId) {
+    public ResponseEntity<Long> getFollowingCount(@PathVariable("userId") Long userId) {
         return ResponseEntity.ok(followService.getFollowingCount(userId));
     }
-    
+
     @GetMapping("/{userId}/is-following")
     @Operation(summary = "Check if current user is following another user")
     public ResponseEntity<Boolean> isFollowing(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             Authentication authentication) {
         Long currentUserId = SecurityUtils.getUserId(authentication);
         return ResponseEntity.ok(followService.isFollowing(currentUserId, userId));
     }
-    
+
     @GetMapping("/{userId}/is-mutual")
     @Operation(summary = "Check if both users follow each other")
     public ResponseEntity<Boolean> isMutualFollow(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             Authentication authentication) {
         Long currentUserId = SecurityUtils.getUserId(authentication);
         return ResponseEntity.ok(followService.isMutualFollow(currentUserId, userId));
@@ -79,9 +80,9 @@ public class FollowController {
     @Operation(summary = "Get list of followers",
                description = "Returns paginated list of users who follow the specified user")
     public ResponseEntity<PagedResponse<UserProfileResponse>> getFollowers(
-            @PathVariable Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @PathVariable("userId") Long userId,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of followers per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> followers = followService.getFollowers(userId, pageable);
         return ResponseEntity.ok(PagedResponse.of(followers));
@@ -91,9 +92,9 @@ public class FollowController {
     @Operation(summary = "Get list of following",
                description = "Returns paginated list of users that the specified user follows")
     public ResponseEntity<PagedResponse<UserProfileResponse>> getFollowing(
-            @PathVariable Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @PathVariable("userId") Long userId,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of users per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> following = followService.getFollowing(userId, pageable);
         return ResponseEntity.ok(PagedResponse.of(following));
@@ -103,8 +104,8 @@ public class FollowController {
     @Operation(summary = "Get current user's mutual friends",
                description = "Returns paginated list of users who both follow each other with the current user")
     public ResponseEntity<PagedResponse<UserProfileResponse>> getCurrentUserMutualFriends(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of mutual friends per page") @RequestParam(name = "size", defaultValue = "20") int size,
             Authentication authentication) {
         Long currentUserId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
@@ -116,9 +117,9 @@ public class FollowController {
     @Operation(summary = "Get mutual friends",
                description = "Returns paginated list of users who both follow each other with the specified user")
     public ResponseEntity<PagedResponse<UserProfileResponse>> getMutualFriends(
-            @PathVariable Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @PathVariable("userId") Long userId,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of mutual friends per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> mutualFriends = followService.getMutualFriends(userId, pageable);
         return ResponseEntity.ok(PagedResponse.of(mutualFriends));

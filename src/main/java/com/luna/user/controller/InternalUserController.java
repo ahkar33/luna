@@ -19,14 +19,14 @@ public class InternalUserController {
 
     @GetMapping("/{userId}")
     @Operation(summary = "Get user by ID (Internal)", description = "Fetch user details for internal services")
-    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserById(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserById(@PathVariable("userId") Long userId) {
         UserProfileResponse user = userService.getUserProfile(userId);
         return ResponseEntity.ok(ApiResponse.success(user, "User retrieved successfully"));
     }
 
     @GetMapping("/username/{username}")
     @Operation(summary = "Get user by username (Internal)", description = "Fetch user details by username for internal services")
-    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserByUsername(@PathVariable String username) {
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserByUsername(@PathVariable("username") String username) {
         UserProfileResponse user = userService.getUserProfileByUsername(username);
         return ResponseEntity.ok(ApiResponse.success(user, "User retrieved successfully"));
     }

@@ -16,4 +16,5 @@ public class UserSuggestionResponse {
     private Long followerCount;
     private Integer mutualConnections;
     private String suggestionReason;  // e.g., "Popular", "Followed by user1, user2"
+    private Boolean isFollowing;  // Whether current user follows this suggested user
 }

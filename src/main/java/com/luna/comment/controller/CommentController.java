@@ -7,6 +7,7 @@ import com.luna.comment.service.ICommentService;
 import com.luna.common.dto.PagedResponse;
 import com.luna.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,10 +30,10 @@ public class CommentController {
     private final ICommentService commentService;
 
     @PostMapping("/posts/{postId}/comments")
-    @Operation(summary = "Create a comment on a post", 
+    @Operation(summary = "Create a comment on a post",
                description = "Create a top-level comment or reply to an existing comment. Max nesting depth is 3 levels.")
     public ResponseEntity<CommentResponse> createComment(
-            @PathVariable Long postId,
+            @PathVariable("postId") Long postId,
             @Valid @RequestBody CreateCommentRequest request,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
@@ -44,9 +45,9 @@ public class CommentController {
     @Operation(summary = "Get comments for a post",
                description = "Returns paginated top-level comments with nested replies")
     public ResponseEntity<PagedResponse<CommentResponse>> getPostComments(
-            @PathVariable Long postId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @PathVariable("postId") Long postId,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Number of comments per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<CommentResponse> comments = commentService.getPostComments(postId, pageable);
         return ResponseEntity.ok(PagedResponse.of(comments));
@@ -54,7 +55,7 @@ public class CommentController {
 
     @GetMapping("/comments/{commentId}")
     @Operation(summary = "Get a single comment with its replies")
-    public ResponseEntity<CommentResponse> getComment(@PathVariable Long commentId) {
+    public ResponseEntity<CommentResponse> getComment(@PathVariable("commentId") Long commentId) {
         CommentResponse response = commentService.getComment(commentId);
         return ResponseEntity.ok(response);
     }
@@ -62,7 +63,7 @@ public class CommentController {
     @PutMapping("/comments/{commentId}")
     @Operation(summary = "Update a comment", description = "Only the comment author can update")
     public ResponseEntity<CommentResponse> updateComment(
-            @PathVariable Long commentId,
+            @PathVariable("commentId") Long commentId,
             @Valid @RequestBody CreateCommentRequest request,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
@@ -73,7 +74,7 @@ public class CommentController {
     @DeleteMapping("/comments/{commentId}")
     @Operation(summary = "Delete a comment", description = "Only the comment author can delete. Deletes all replies too.")
     public ResponseEntity<MessageResponse> deleteComment(
-            @PathVariable Long commentId,
+            @PathVariable("commentId") Long commentId,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         commentService.deleteComment(commentId, userId);
@@ -82,7 +83,7 @@ public class CommentController {
 
     @GetMapping("/posts/{postId}/comments/count")
     @Operation(summary = "Get total comment count for a post")
-    public ResponseEntity<Long> getCommentCount(@PathVariable Long postId) {
+    public ResponseEntity<Long> getCommentCount(@PathVariable("postId") Long postId) {
         long count = commentService.getCommentCount(postId);
         return ResponseEntity.ok(count);
     }

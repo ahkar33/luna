@@ -7,6 +7,7 @@ import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.dto.UserSuggestionResponse;
 import com.luna.user.service.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public class UserController {
     
     @GetMapping("/{userId}/profile")
     @Operation(summary = "Get user profile by ID")
-    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable Long userId) {
+    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable("userId") Long userId) {
         UserProfileResponse response = userService.getUserProfile(userId);
         return ResponseEntity.ok(response);
     }
@@ -49,7 +50,7 @@ public class UserController {
     @PutMapping(value = "/profile/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Update profile image")
     public ResponseEntity<UserProfileResponse> updateProfileImage(
-            @RequestPart MultipartFile image,
+            @RequestPart("image") MultipartFile image,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         UserProfileResponse response = userService.updateProfileImage(userId, image);
@@ -67,10 +68,11 @@ public class UserController {
     }
     
     @GetMapping("/suggestions")
-    @Operation(summary = "Get suggested users to follow", 
+    @Operation(summary = "Get suggested users to follow",
                description = "Returns user suggestions based on mutual connections or popularity for new users")
     public ResponseEntity<List<UserSuggestionResponse>> getSuggestedUsers(
-            @RequestParam(defaultValue = "10") int limit,
+            @Parameter(description = "Number of suggestions to return (max: 50)", example = "10")
+            @RequestParam(name = "limit", defaultValue = "10") int limit,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         List<UserSuggestionResponse> suggestions = userService.getSuggestedUsers(userId, Math.min(limit, 50));
@@ -81,9 +83,12 @@ public class UserController {
     @Operation(summary = "Search users by username",
                description = "Search for users by username. Results are sorted by relevance and popularity.")
     public ResponseEntity<PagedResponse<UserProfileResponse>> searchUsers(
-            @RequestParam String q,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Search query (username)", example = "john")
+            @RequestParam(name = "q") String q,
+            @Parameter(description = "Page number (0-indexed)", example = "0")
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @Parameter(description = "Page size (max: 50)", example = "20")
+            @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> results = userService.searchUsers(q, pageable);
         return ResponseEntity.ok(PagedResponse.of(results));

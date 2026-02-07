@@ -41,15 +41,33 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findPopularUsersExcluding(@Param("userId") Long userId, Pageable pageable);
     
     // Get friends of friends (users followed by people the current user follows)
-    @Query("""
-        SELECT DISTINCT u FROM User u
-        JOIN UserFollow uf ON uf.following.id = u.id
-        WHERE uf.follower.id IN (SELECT uf2.following.id FROM UserFollow uf2 WHERE uf2.follower.id = :userId)
-        AND u.id != :userId
-        AND u.isActive = true
-        AND u.emailVerified = true
-        AND u.id NOT IN (SELECT uf3.following.id FROM UserFollow uf3 WHERE uf3.follower.id = :userId)
-        ORDER BY (SELECT COUNT(f) FROM UserFollow f WHERE f.following.id = u.id) DESC
-        """)
+    @Query(value = """
+        WITH friend_suggestions AS (
+            SELECT DISTINCT u.id, u.bio, u.country, u.country_code, u.created_at,
+                   u.email, u.email_verified, u.is_active, u.password,
+                   u.profile_image_url, u.role, u.updated_at, u.username,
+                   (SELECT COUNT(*) FROM user_follows f WHERE f.following_id = u.id) as follower_count
+            FROM users u
+            JOIN user_follows uf ON uf.following_id = u.id
+            WHERE uf.follower_id IN (
+                SELECT uf2.following_id
+                FROM user_follows uf2
+                WHERE uf2.follower_id = :userId
+            )
+            AND u.id != :userId
+            AND u.is_active = true
+            AND u.email_verified = true
+            AND u.id NOT IN (
+                SELECT uf3.following_id
+                FROM user_follows uf3
+                WHERE uf3.follower_id = :userId
+            )
+        )
+        SELECT id, bio, country, country_code, created_at, email, email_verified,
+               is_active, password, profile_image_url, role, updated_at, username
+        FROM friend_suggestions
+        ORDER BY follower_count DESC
+        LIMIT :#{#pageable.pageSize}
+        """, nativeQuery = true)
     List<User> findFriendsOfFriends(@Param("userId") Long userId, Pageable pageable);
 }

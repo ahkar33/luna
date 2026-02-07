@@ -131,8 +131,11 @@ public class UserServiceImpl implements IUserService {
                         .followerCount(followerCount)
                         .mutualConnections(mutualCount)
                         .suggestionReason(mutualCount > 0
-                            ? "Followed by " + mutualCount + " people you follow"
+                            ? (mutualCount == 1
+                                ? "Followed by 1 person you follow"
+                                : "Followed by " + mutualCount + " people you follow")
                             : "You might know")
+                        .isFollowing(false)  // Suggestions exclude already-followed users
                         .build());
                 }
             }
@@ -156,6 +159,7 @@ public class UserServiceImpl implements IUserService {
                         .followerCount(followerCount)
                         .mutualConnections(0)
                         .suggestionReason("Popular on Luna")
+                        .isFollowing(false)  // Suggestions exclude already-followed users
                         .build());
                 }
             }
