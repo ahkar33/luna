@@ -99,6 +99,19 @@ public class FollowController {
         return ResponseEntity.ok(PagedResponse.of(following));
     }
 
+    @GetMapping("/mutual-friends")
+    @Operation(summary = "Get current user's mutual friends",
+               description = "Returns paginated list of users who both follow each other with the current user")
+    public ResponseEntity<PagedResponse<UserProfileResponse>> getCurrentUserMutualFriends(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
+        Long currentUserId = SecurityUtils.getUserId(authentication);
+        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
+        Page<UserProfileResponse> mutualFriends = followService.getMutualFriends(currentUserId, pageable);
+        return ResponseEntity.ok(PagedResponse.of(mutualFriends));
+    }
+
     @GetMapping("/{userId}/mutual-friends")
     @Operation(summary = "Get mutual friends",
                description = "Returns paginated list of users who both follow each other with the specified user")

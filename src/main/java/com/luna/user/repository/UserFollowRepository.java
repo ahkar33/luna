@@ -49,7 +49,7 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
     Page<User> findFollowingByUserId(@Param("userId") Long userId, Pageable pageable);
 
     // Get mutual friends (users who follow each other)
-    @Query("""
+    @Query(value = """
         SELECT uf1.following FROM UserFollow uf1
         WHERE uf1.follower.id = :userId
         AND EXISTS (
@@ -58,6 +58,15 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
             AND uf2.following.id = :userId
         )
         ORDER BY uf1.createdAt DESC
+        """,
+        countQuery = """
+        SELECT COUNT(uf1) FROM UserFollow uf1
+        WHERE uf1.follower.id = :userId
+        AND EXISTS (
+            SELECT 1 FROM UserFollow uf2
+            WHERE uf2.follower.id = uf1.following.id
+            AND uf2.following.id = :userId
+        )
         """)
     Page<User> findMutualFriends(@Param("userId") Long userId, Pageable pageable);
 }
