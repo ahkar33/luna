@@ -1,5 +1,6 @@
 package com.luna.user.repository;
 
+import com.luna.auth.dto.AuthProvider;
 import com.luna.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     boolean existsByEmail(String email);
     boolean existsByUsername(String username);
+    Optional<User> findByAuthProviderAndProviderId(AuthProvider authProvider, String providerId);
     
     // Search users by username (case-insensitive, partial match)
     @Query("""
@@ -46,6 +48,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             SELECT DISTINCT u.id, u.bio, u.country, u.country_code, u.created_at,
                    u.email, u.email_verified, u.is_active, u.password,
                    u.profile_image_url, u.role, u.updated_at, u.username,
+                   u.auth_provider, u.provider_id,
                    (SELECT COUNT(*) FROM user_follows f WHERE f.following_id = u.id) as follower_count
             FROM users u
             JOIN user_follows uf ON uf.following_id = u.id
@@ -64,7 +67,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
             )
         )
         SELECT id, bio, country, country_code, created_at, email, email_verified,
-               is_active, password, profile_image_url, role, updated_at, username
+               is_active, password, profile_image_url, role, updated_at, username,
+               auth_provider, provider_id
         FROM friend_suggestions
         ORDER BY follower_count DESC
         LIMIT :#{#pageable.pageSize}

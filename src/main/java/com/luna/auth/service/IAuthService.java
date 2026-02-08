@@ -23,4 +23,6 @@ public interface IAuthService {
     void verifyResetPasswordOtp(VerifyResetPasswordOtpRequest request);
 
     void resetPassword(ResetPasswordRequest request);
+
+    AuthResponse googleAuth(GoogleAuthRequest request, String ipAddress);
 }

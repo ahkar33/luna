@@ -264,6 +264,30 @@ public class AuthController {
         ));
     }
 
+    @PostMapping("/google")
+    @Operation(summary = "Sign in with Google", description = "Authenticates user using Google ID token. Creates account if new, links if existing email.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Authentication successful"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "Too many requests"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid Google token")
+    })
+    public ResponseEntity<ApiResponse<AuthResponse>> googleAuth(
+            @Valid @RequestBody GoogleAuthRequest request,
+            HttpServletRequest httpRequest) {
+
+        // Rate limit by IP
+        String key = "google-auth:" + getClientIP(httpRequest);
+        Bucket bucket = rateLimitService.resolveBucket(key);
+
+        if (!bucket.tryConsume(1)) {
+            throw new BadRequestException("Too many requests. Please try again later.");
+        }
+
+        String ipAddress = getClientIP(httpRequest);
+        AuthResponse response = authService.googleAuth(request, ipAddress);
+        return ResponseEntity.ok(ApiResponse.success(response, "Authentication successful"));
+    }
+
     private String getClientIP(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
         if (xfHeader == null) {

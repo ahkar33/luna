@@ -81,6 +81,8 @@ app:
     api-key: ${SERVICE_API_KEY:}
   security:
     device-verification-enabled: ${DEVICE_VERIFICATION_ENABLED:true}  # Set to false to skip device verification
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
 
 # Logging Configuration
 logging:

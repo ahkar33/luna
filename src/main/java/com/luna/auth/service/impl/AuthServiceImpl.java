@@ -1,6 +1,7 @@
 package com.luna.auth.service.impl;
 
 import com.luna.auth.dto.*;
+import com.luna.auth.service.GoogleTokenVerifierService;
 import com.luna.auth.service.IAuthService;
 import com.luna.common.exception.BadRequestException;
 import com.luna.common.exception.ResourceNotFoundException;
@@ -40,6 +41,7 @@ public class AuthServiceImpl implements IAuthService {
     private final EmailService emailService;
     private final GeoIpService geoIpService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final GoogleTokenVerifierService googleTokenVerifierService;
 
     @Override
     @Transactional
@@ -87,11 +89,17 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     @Transactional
     public LoginResponse login(AuthRequest request, String deviceFingerprint, String ipAddress, String userAgent) {
+        // Check if user exists and is Google-only (no password)
+        var userOpt = userRepository.findByEmail(request.getEmail());
+        if (userOpt.isPresent() && userOpt.get().getPassword() == null) {
+            throw new BadRequestException("This account uses Google Sign-In. Please sign in with Google.");
+        }
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        var user = userRepository.findByEmail(request.getEmail())
+        var user = userOpt
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!user.getEmailVerified()) {
@@ -380,6 +388,10 @@ public class AuthServiceImpl implements IAuthService {
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        if (user.getPassword() == null) {
+            throw new BadRequestException("This account uses Google Sign-In. Password reset is not available.");
+        }
+
         // Rate limiting: Check if there's a recent OTP (within last 60 seconds)
         Instant oneMinuteAgo = Instant.now().minusSeconds(60);
         var recentToken = passwordResetTokenRepository
@@ -451,5 +463,108 @@ public class AuthServiceImpl implements IAuthService {
         // Mark token as used
         resetToken.setUsed(true);
         passwordResetTokenRepository.save(resetToken);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse googleAuth(GoogleAuthRequest request, String ipAddress) {
+        var payload = googleTokenVerifierService.verify(request.getIdToken());
+
+        String email = payload.getEmail();
+        String googleUserId = payload.getSubject();
+        String name = (String) payload.get("name");
+        String pictureUrl = (String) payload.get("picture");
+
+        if (email == null || !payload.getEmailVerified()) {
+            throw new BadRequestException("Google account email is not verified");
+        }
+
+        // 1. Look up by Google provider ID
+        var existingGoogleUser = userRepository.findByAuthProviderAndProviderId(AuthProvider.GOOGLE, googleUserId);
+        if (existingGoogleUser.isPresent()) {
+            var user = existingGoogleUser.get();
+            var accessToken = jwtService.generateAccessToken(user);
+            var refreshToken = createRefreshToken(user);
+            return AuthResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken.getToken())
+                    .build();
+        }
+
+        // 2. Look up by email (auto-link existing LOCAL account)
+        var existingEmailUser = userRepository.findByEmail(email);
+        if (existingEmailUser.isPresent()) {
+            var user = existingEmailUser.get();
+            user.setAuthProvider(AuthProvider.GOOGLE);
+            user.setProviderId(googleUserId);
+            user.setEmailVerified(true);
+            user.setIsActive(true);
+            if (user.getProfileImageUrl() == null && pictureUrl != null) {
+                user.setProfileImageUrl(pictureUrl);
+            }
+            userRepository.save(user);
+
+            var accessToken = jwtService.generateAccessToken(user);
+            var refreshToken = createRefreshToken(user);
+            return AuthResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken.getToken())
+                    .build();
+        }
+
+        // 3. Create new user
+        String username = generateUniqueUsername(email, name);
+
+        // Detect country from IP
+        String countryCode = null;
+        String country = null;
+        GeoIpService.GeoIpInfo geoInfo = geoIpService.getGeoInfo(ipAddress);
+        if (geoInfo != null) {
+            countryCode = geoInfo.countryCode();
+            country = geoInfo.country();
+        }
+
+        var newUser = User.builder()
+                .email(email)
+                .username(username)
+                .password(null)
+                .role(Role.USER)
+                .authProvider(AuthProvider.GOOGLE)
+                .providerId(googleUserId)
+                .isActive(true)
+                .emailVerified(true)
+                .profileImageUrl(pictureUrl)
+                .countryCode(countryCode)
+                .country(country)
+                .build();
+        userRepository.save(newUser);
+
+        var accessToken = jwtService.generateAccessToken(newUser);
+        var refreshToken = createRefreshToken(newUser);
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .build();
+    }
+
+    private String generateUniqueUsername(String email, String name) {
+        // Try name first (lowercase, no spaces), then email prefix
+        String base = name != null ? name.toLowerCase().replaceAll("[^a-z0-9]", "") : email.split("@")[0];
+        if (base.length() > 20) {
+            base = base.substring(0, 20);
+        }
+        if (base.length() < 3) {
+            base = "user" + base;
+        }
+
+        String candidate = base;
+        int suffix = 1;
+        while (userRepository.existsByUsername(candidate)) {
+            String suffixStr = String.valueOf(suffix);
+            int maxBase = 20 - suffixStr.length();
+            candidate = base.substring(0, Math.min(base.length(), maxBase)) + suffixStr;
+            suffix++;
+        }
+        return candidate;
     }
 }
