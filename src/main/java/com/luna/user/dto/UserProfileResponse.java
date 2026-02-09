@@ -21,4 +21,7 @@ public class UserProfileResponse {
     private String country;
     private Boolean emailVerified;
     private LocalDateTime createdAt;
+    private Long followerCount;
+    private Long followingCount;
+    private Long postCount;
 }

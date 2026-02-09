@@ -2,6 +2,7 @@ package com.luna.user.service.impl;
 
 import com.luna.common.exception.ResourceNotFoundException;
 import com.luna.common.service.CloudinaryService;
+import com.luna.post.repository.PostRepository;
 import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.dto.UserSuggestionResponse;
 import com.luna.user.entity.User;
@@ -30,6 +31,7 @@ public class UserServiceImpl implements IUserService {
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
     private final CloudinaryService cloudinaryService;
+    private final PostRepository postRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -93,6 +95,10 @@ public class UserServiceImpl implements IUserService {
     }
     
     private UserProfileResponse mapToUserProfileResponse(User user) {
+        long followerCount = userFollowRepository.countByFollowingId(user.getId());
+        long followingCount = userFollowRepository.countByFollowerId(user.getId());
+        long postCount = postRepository.countByAuthorId(user.getId());
+
         return UserProfileResponse.builder()
             .id(user.getId())
             .username(user.getUsernameField())
@@ -103,6 +109,9 @@ public class UserServiceImpl implements IUserService {
             .country(user.getCountry())
             .emailVerified(user.getEmailVerified())
             .createdAt(user.getCreatedAt())
+            .followerCount(followerCount)
+            .followingCount(followingCount)
+            .postCount(postCount)
             .build();
     }
     

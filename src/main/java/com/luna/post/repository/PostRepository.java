@@ -34,4 +34,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
         ORDER BY p.createdAt DESC
         """)
     Page<Post> findByHashtag(@Param("hashtagName") String hashtagName, Pageable pageable);
+
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.author.id = :authorId AND p.deletedAt IS NULL")
+    long countByAuthorId(@Param("authorId") Long authorId);
 }
