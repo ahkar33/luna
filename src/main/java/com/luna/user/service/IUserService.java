@@ -15,7 +15,7 @@ public interface IUserService extends UserDetailsService {
     
     UserProfileResponse updateBio(Long userId, String bio);
     
-    UserProfileResponse getUserProfile(Long userId);
+    UserProfileResponse getUserProfile(Long userId, Long currentUserId);
     
     UserProfileResponse getUserProfileByUsername(String username);
     

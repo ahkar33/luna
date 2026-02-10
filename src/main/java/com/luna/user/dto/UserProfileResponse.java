@@ -24,4 +24,5 @@ public class UserProfileResponse {
     private Long followerCount;
     private Long followingCount;
     private Long postCount;
+    private Boolean isMyProfile;
 }

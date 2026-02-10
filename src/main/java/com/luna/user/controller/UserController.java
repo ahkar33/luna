@@ -36,14 +36,17 @@ public class UserController {
     @Operation(summary = "Get current user profile")
     public ResponseEntity<UserProfileResponse> getCurrentUserProfile(Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
-        UserProfileResponse response = userService.getUserProfile(userId);
+        UserProfileResponse response = userService.getUserProfile(userId, userId);
         return ResponseEntity.ok(response);
     }
-    
+
     @GetMapping("/{userId}/profile")
     @Operation(summary = "Get user profile by ID")
-    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable("userId") Long userId) {
-        UserProfileResponse response = userService.getUserProfile(userId);
+    public ResponseEntity<UserProfileResponse> getUserProfile(
+            @PathVariable("userId") Long userId,
+            Authentication authentication) {
+        Long currentUserId = authentication != null ? SecurityUtils.getUserId(authentication) : null;
+        UserProfileResponse response = userService.getUserProfile(userId, currentUserId);
         return ResponseEntity.ok(response);
     }
     

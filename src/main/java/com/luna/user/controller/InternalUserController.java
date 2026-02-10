@@ -20,7 +20,7 @@ public class InternalUserController {
     @GetMapping("/{userId}")
     @Operation(summary = "Get user by ID (Internal)", description = "Fetch user details for internal services")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getUserById(@PathVariable("userId") Long userId) {
-        UserProfileResponse user = userService.getUserProfile(userId);
+        UserProfileResponse user = userService.getUserProfile(userId, null);
         return ResponseEntity.ok(ApiResponse.success(user, "User retrieved successfully"));
     }
 

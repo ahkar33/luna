@@ -60,29 +60,29 @@ public class UserServiceImpl implements IUserService {
         String imageUrl = cloudinaryService.uploadImage(image, "profiles");
         user.setProfileImageUrl(imageUrl);
         user = userRepository.save(user);
-        
-        return mapToUserProfileResponse(user);
+
+        return mapToUserProfileResponse(user, userId);
     }
-    
+
     @Override
     @Transactional
     public UserProfileResponse updateBio(Long userId, String bio) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
+
         user.setBio(bio);
         user = userRepository.save(user);
-        
-        return mapToUserProfileResponse(user);
+
+        return mapToUserProfileResponse(user, userId);
     }
     
     @Override
     @Transactional(readOnly = true)
-    public UserProfileResponse getUserProfile(Long userId) {
+    public UserProfileResponse getUserProfile(Long userId, Long currentUserId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
-        return mapToUserProfileResponse(user);
+
+        return mapToUserProfileResponse(user, currentUserId);
     }
     
     @Override
@@ -95,6 +95,10 @@ public class UserServiceImpl implements IUserService {
     }
     
     private UserProfileResponse mapToUserProfileResponse(User user) {
+        return mapToUserProfileResponse(user, null);
+    }
+
+    private UserProfileResponse mapToUserProfileResponse(User user, Long currentUserId) {
         long followerCount = userFollowRepository.countByFollowingId(user.getId());
         long followingCount = userFollowRepository.countByFollowerId(user.getId());
         long postCount = postRepository.countByAuthorId(user.getId());
@@ -112,6 +116,7 @@ public class UserServiceImpl implements IUserService {
             .followerCount(followerCount)
             .followingCount(followingCount)
             .postCount(postCount)
+            .isMyProfile(user.getId().equals(currentUserId))
             .build();
     }
     
