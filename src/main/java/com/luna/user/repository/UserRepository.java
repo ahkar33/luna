@@ -1,6 +1,7 @@
 package com.luna.user.repository;
 
 import com.luna.auth.dto.AuthProvider;
+import com.luna.user.dto.UserSuggestionProjection;
 import com.luna.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,36 +43,48 @@ public interface UserRepository extends JpaRepository<User, Long> {
         """)
     List<User> findPopularUsersExcluding(@Param("userId") Long userId, Pageable pageable);
     
-    // Get friends of friends (users followed by people the current user follows)
+    // Graph-based suggestions: 2nd-degree connections with mutual count and follower count computed inline
     @Query(value = """
-        WITH friend_suggestions AS (
-            SELECT DISTINCT u.id, u.bio, u.country, u.country_code, u.created_at,
-                   u.email, u.email_verified, u.is_active, u.password,
-                   u.profile_image_url, u.role, u.updated_at, u.username,
-                   u.auth_provider, u.provider_id,
-                   (SELECT COUNT(*) FROM user_follows f WHERE f.following_id = u.id) as follower_count
-            FROM users u
-            JOIN user_follows uf ON uf.following_id = u.id
-            WHERE uf.follower_id IN (
-                SELECT uf2.following_id
-                FROM user_follows uf2
-                WHERE uf2.follower_id = :userId
-            )
-            AND u.id != :userId
-            AND u.is_active = true
-            AND u.email_verified = true
-            AND u.id NOT IN (
-                SELECT uf3.following_id
-                FROM user_follows uf3
-                WHERE uf3.follower_id = :userId
-            )
-        )
-        SELECT id, bio, country, country_code, created_at, email, email_verified,
-               is_active, password, profile_image_url, role, updated_at, username,
-               auth_provider, provider_id
-        FROM friend_suggestions
-        ORDER BY follower_count DESC
-        LIMIT :#{#pageable.pageSize}
+        SELECT u.id AS id,
+               u.username AS username,
+               u.profile_image_url AS profileImageUrl,
+               u.country_code AS countryCode,
+               COUNT(DISTINCT uf.follower_id) AS mutualConnectionCount,
+               (SELECT COUNT(*) FROM user_follows f WHERE f.following_id = u.id) AS followerCount
+        FROM users u
+        JOIN user_follows uf ON uf.following_id = u.id
+            AND uf.follower_id IN (SELECT uf2.following_id FROM user_follows uf2 WHERE uf2.follower_id = :userId)
+        WHERE u.id != :userId
+          AND u.is_active = true
+          AND u.email_verified = true
+          AND u.id NOT IN (SELECT uf3.following_id FROM user_follows uf3 WHERE uf3.follower_id = :userId)
+        GROUP BY u.id, u.username, u.profile_image_url, u.country_code
+        ORDER BY mutualConnectionCount DESC, followerCount DESC
+        LIMIT :limit
         """, nativeQuery = true)
-    List<User> findFriendsOfFriends(@Param("userId") Long userId, Pageable pageable);
+    List<UserSuggestionProjection> findGraphBasedSuggestions(@Param("userId") Long userId, @Param("limit") int limit);
+
+    // Same-country users not already followed and not in excluded set
+    @Query(value = """
+        SELECT u.id AS id,
+               u.username AS username,
+               u.profile_image_url AS profileImageUrl,
+               u.country_code AS countryCode,
+               0 AS mutualConnectionCount,
+               (SELECT COUNT(*) FROM user_follows f WHERE f.following_id = u.id) AS followerCount
+        FROM users u
+        WHERE u.country_code = :countryCode
+          AND u.id != :userId
+          AND u.is_active = true
+          AND u.email_verified = true
+          AND u.id NOT IN (SELECT uf.following_id FROM user_follows uf WHERE uf.follower_id = :userId)
+          AND u.id NOT IN (:excludeIds)
+        ORDER BY followerCount DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<UserSuggestionProjection> findSameCountryUsersExcluding(
+            @Param("userId") Long userId,
+            @Param("countryCode") String countryCode,
+            @Param("excludeIds") List<Long> excludeIds,
+            @Param("limit") int limit);
 }

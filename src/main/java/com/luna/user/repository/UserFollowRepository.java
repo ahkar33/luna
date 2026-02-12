@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -47,6 +48,20 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
         ORDER BY uf.createdAt DESC
         """)
     Page<User> findFollowingByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    // Batch fetch mutual connection usernames for multiple suggested users at once
+    // Returns [suggestedUserId, mutualUsername] pairs
+    @Query(value = """
+        SELECT uf.following_id AS suggested_user_id, u.username AS mutual_username
+        FROM user_follows uf
+        JOIN users u ON u.id = uf.follower_id
+        WHERE uf.following_id IN (:suggestedUserIds)
+          AND uf.follower_id IN (SELECT uf2.following_id FROM user_follows uf2 WHERE uf2.follower_id = :currentUserId)
+        ORDER BY uf.following_id, u.username
+        """, nativeQuery = true)
+    List<Object[]> findMutualConnectionUsernames(
+            @Param("currentUserId") Long currentUserId,
+            @Param("suggestedUserIds") List<Long> suggestedUserIds);
 
     // Get mutual friends (users who follow each other)
     @Query(value = """

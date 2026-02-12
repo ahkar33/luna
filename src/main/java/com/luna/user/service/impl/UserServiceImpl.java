@@ -4,6 +4,7 @@ import com.luna.common.exception.ResourceNotFoundException;
 import com.luna.common.service.CloudinaryService;
 import com.luna.post.repository.PostRepository;
 import com.luna.user.dto.UserProfileResponse;
+import com.luna.user.dto.UserSuggestionProjection;
 import com.luna.user.dto.UserSuggestionResponse;
 import com.luna.user.entity.User;
 import com.luna.user.repository.UserFollowRepository;
@@ -19,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -125,61 +123,134 @@ public class UserServiceImpl implements IUserService {
     public List<UserSuggestionResponse> getSuggestedUsers(Long userId, int limit) {
         List<UserSuggestionResponse> suggestions = new ArrayList<>();
         Set<Long> addedUserIds = new HashSet<>();
-        
-        // Check if user follows anyone
+
+        User currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        String userCountryCode = currentUser.getCountryCode();
+
         long followingCount = userFollowRepository.countByFollowerId(userId);
-        
+
+        // TIER 1: Graph-based (2nd-degree connections with composite scoring)
         if (followingCount > 0) {
-            // User follows people - get friends of friends first
-            List<User> friendsOfFriends = userRepository.findFriendsOfFriends(userId, PageRequest.of(0, limit));
-            
-            for (User user : friendsOfFriends) {
-                if (addedUserIds.add(user.getId())) {
-                    int mutualCount = userFollowRepository.countMutualConnections(userId, user.getId());
-                    long followerCount = userFollowRepository.countByFollowingId(user.getId());
+            List<UserSuggestionProjection> graphResults =
+                    userRepository.findGraphBasedSuggestions(userId, limit * 2);
+
+            // Apply composite scoring
+            List<UserSuggestionProjection> scored = graphResults.stream()
+                    .sorted((a, b) -> Double.compare(
+                            computeScore(b, userCountryCode),
+                            computeScore(a, userCountryCode)))
+                    .limit(limit)
+                    .toList();
+
+            // Batch-fetch mutual connection usernames for all scored suggestions
+            List<Long> scoredIds = scored.stream().map(UserSuggestionProjection::getId).toList();
+            Map<Long, List<String>> mutualUsernamesMap = new HashMap<>();
+            if (!scoredIds.isEmpty()) {
+                List<Object[]> mutualRows = userFollowRepository.findMutualConnectionUsernames(userId, scoredIds);
+                for (Object[] row : mutualRows) {
+                    Long suggestedId = ((Number) row[0]).longValue();
+                    String mutualUsername = (String) row[1];
+                    mutualUsernamesMap.computeIfAbsent(suggestedId, k -> new ArrayList<>()).add(mutualUsername);
+                }
+            }
+
+            for (UserSuggestionProjection p : scored) {
+                if (addedUserIds.add(p.getId())) {
+                    List<String> mutualUsernames = mutualUsernamesMap.getOrDefault(p.getId(), List.of());
+                    int mutualCount = p.getMutualConnectionCount();
 
                     suggestions.add(UserSuggestionResponse.builder()
-                        .id(user.getId())
-                        .username(user.getUsernameField())
-                        .profileImageUrl(user.getProfileImageUrl())
-                        .followerCount(followerCount)
-                        .mutualConnections(mutualCount)
-                        .suggestionReason(mutualCount > 0
-                            ? (mutualCount == 1
-                                ? "Followed by 1 person you follow"
-                                : "Followed by " + mutualCount + " people you follow")
-                            : "You might know")
-                        .isFollowing(false)  // Suggestions exclude already-followed users
-                        .build());
+                            .id(p.getId())
+                            .username(p.getUsername())
+                            .profileImageUrl(p.getProfileImageUrl())
+                            .followerCount(p.getFollowerCount())
+                            .mutualConnections(mutualCount)
+                            .mutualConnectionUsernames(mutualUsernames)
+                            .suggestionReason(buildMutualReason(mutualUsernames, mutualCount))
+                            .isFollowing(false)
+                            .build());
                 }
             }
         }
-        
-        // Fill remaining slots with popular users (cold start or not enough friends of friends)
+
+        // TIER 2: Same country (geographic fallback)
+        if (suggestions.size() < limit && userCountryCode != null && !userCountryCode.isBlank()) {
+            int remaining = limit - suggestions.size();
+            List<Long> excludeIds = new ArrayList<>(addedUserIds);
+            if (excludeIds.isEmpty()) {
+                excludeIds.add(0L); // placeholder to avoid empty IN clause
+            }
+
+            List<UserSuggestionProjection> countryResults =
+                    userRepository.findSameCountryUsersExcluding(userId, userCountryCode, excludeIds, remaining);
+
+            for (UserSuggestionProjection p : countryResults) {
+                if (suggestions.size() >= limit) break;
+                if (addedUserIds.add(p.getId())) {
+                    suggestions.add(UserSuggestionResponse.builder()
+                            .id(p.getId())
+                            .username(p.getUsername())
+                            .profileImageUrl(p.getProfileImageUrl())
+                            .followerCount(p.getFollowerCount())
+                            .mutualConnections(0)
+                            .mutualConnectionUsernames(List.of())
+                            .suggestionReason("From your country")
+                            .isFollowing(false)
+                            .build());
+                }
+            }
+        }
+
+        // TIER 3: Popular users (cold start fallback)
         if (suggestions.size() < limit) {
             int remaining = limit - suggestions.size();
-            List<User> popularUsers = userRepository.findPopularUsersExcluding(userId, PageRequest.of(0, remaining + addedUserIds.size()));
-            
+            List<User> popularUsers = userRepository.findPopularUsersExcluding(
+                    userId, PageRequest.of(0, remaining + addedUserIds.size()));
+
             for (User user : popularUsers) {
                 if (suggestions.size() >= limit) break;
-
                 if (addedUserIds.add(user.getId())) {
-                    long followerCount = userFollowRepository.countByFollowingId(user.getId());
-
                     suggestions.add(UserSuggestionResponse.builder()
-                        .id(user.getId())
-                        .username(user.getUsernameField())
-                        .profileImageUrl(user.getProfileImageUrl())
-                        .followerCount(followerCount)
-                        .mutualConnections(0)
-                        .suggestionReason("Popular on Luna")
-                        .isFollowing(false)  // Suggestions exclude already-followed users
-                        .build());
+                            .id(user.getId())
+                            .username(user.getUsernameField())
+                            .profileImageUrl(user.getProfileImageUrl())
+                            .followerCount(userFollowRepository.countByFollowingId(user.getId()))
+                            .mutualConnections(0)
+                            .mutualConnectionUsernames(List.of())
+                            .suggestionReason("Popular on Luna")
+                            .isFollowing(false)
+                            .build());
                 }
             }
         }
-        
+
         return suggestions;
+    }
+
+    private double computeScore(UserSuggestionProjection projection, String userCountryCode) {
+        double score = projection.getMutualConnectionCount() * 10.0;
+        if (userCountryCode != null && userCountryCode.equals(projection.getCountryCode())) {
+            score += 5.0;
+        }
+        score += Math.min(Math.log(projection.getFollowerCount() + 1) / Math.log(2), 10.0);
+        return score;
+    }
+
+    private String buildMutualReason(List<String> mutualUsernames, int mutualCount) {
+        if (mutualUsernames.isEmpty()) {
+            return "You might know";
+        }
+        if (mutualUsernames.size() == 1 && mutualCount == 1) {
+            return "Followed by " + mutualUsernames.get(0);
+        }
+        if (mutualUsernames.size() >= 2 && mutualCount == 2) {
+            return "Followed by " + mutualUsernames.get(0) + " and " + mutualUsernames.get(1);
+        }
+        // Show up to 2 names + "and N others"
+        int others = mutualCount - 2;
+        return "Followed by " + mutualUsernames.get(0) + ", " + mutualUsernames.get(1)
+                + ", and " + others + (others == 1 ? " other" : " others");
     }
 
     @Override
