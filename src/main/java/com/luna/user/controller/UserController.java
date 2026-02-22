@@ -54,11 +54,13 @@ public class UserController {
                description = "Update display name, bio, and/or profile image. All fields are optional.")
     public ResponseEntity<UserProfileResponse> updateProfile(
             @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestPart(value = "username", required = false) String username,
             @RequestPart(value = "displayName", required = false) String displayName,
             @RequestPart(value = "bio", required = false) String bio,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
         UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setUsername(username);
         request.setDisplayName(displayName);
         request.setBio(bio);
         UserProfileResponse response = userService.updateProfile(userId, request, image);

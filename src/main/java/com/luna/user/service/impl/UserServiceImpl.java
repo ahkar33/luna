@@ -1,5 +1,6 @@
 package com.luna.user.service.impl;
 
+import com.luna.common.exception.BadRequestException;
 import com.luna.common.exception.ResourceNotFoundException;
 import com.luna.common.service.CloudinaryService;
 import com.luna.post.repository.PostRepository;
@@ -57,6 +58,14 @@ public class UserServiceImpl implements IUserService {
             }
             String imageUrl = cloudinaryService.uploadImage(image, "profiles");
             user.setProfileImageUrl(imageUrl);
+        }
+
+        if (request.getUsername() != null) {
+            String newUsername = request.getUsername();
+            if (!newUsername.equals(user.getUsernameField()) && userRepository.existsByUsername(newUsername)) {
+                throw new BadRequestException("Username is already taken");
+            }
+            user.setUsername(newUsername);
         }
 
         if (request.getDisplayName() != null) {
