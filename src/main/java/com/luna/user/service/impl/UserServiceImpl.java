@@ -3,6 +3,7 @@ package com.luna.user.service.impl;
 import com.luna.common.exception.ResourceNotFoundException;
 import com.luna.common.service.CloudinaryService;
 import com.luna.post.repository.PostRepository;
+import com.luna.user.dto.UpdateProfileRequest;
 import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.dto.UserSuggestionProjection;
 import com.luna.user.dto.UserSuggestionResponse;
@@ -42,35 +43,31 @@ public class UserServiceImpl implements IUserService {
     
     @Override
     @Transactional
-    public UserProfileResponse updateProfileImage(Long userId, MultipartFile image) {
+    public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request, MultipartFile image) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
-        // Delete old profile image if exists
-        if (user.getProfileImageUrl() != null) {
-            String oldPublicId = cloudinaryService.extractPublicId(user.getProfileImageUrl());
-            if (oldPublicId != null) {
-                cloudinaryService.deleteFile(oldPublicId);
+
+        if (image != null && !image.isEmpty()) {
+            // Delete old profile image from Cloudinary before uploading new one
+            if (user.getProfileImageUrl() != null) {
+                String oldPublicId = cloudinaryService.extractPublicId(user.getProfileImageUrl());
+                if (oldPublicId != null) {
+                    cloudinaryService.deleteFile(oldPublicId);
+                }
             }
+            String imageUrl = cloudinaryService.uploadImage(image, "profiles");
+            user.setProfileImageUrl(imageUrl);
         }
-        
-        // Upload new profile image
-        String imageUrl = cloudinaryService.uploadImage(image, "profiles");
-        user.setProfileImageUrl(imageUrl);
+
+        if (request.getDisplayName() != null) {
+            user.setDisplayName(request.getDisplayName());
+        }
+
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+
         user = userRepository.save(user);
-
-        return mapToUserProfileResponse(user, userId);
-    }
-
-    @Override
-    @Transactional
-    public UserProfileResponse updateBio(Long userId, String bio) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        user.setBio(bio);
-        user = userRepository.save(user);
-
         return mapToUserProfileResponse(user, userId);
     }
     
@@ -104,6 +101,7 @@ public class UserServiceImpl implements IUserService {
         return UserProfileResponse.builder()
             .id(user.getId())
             .username(user.getUsernameField())
+            .displayName(user.getDisplayName())
             .email(user.getEmail())
             .profileImageUrl(user.getProfileImageUrl())
             .bio(user.getBio())
@@ -163,6 +161,7 @@ public class UserServiceImpl implements IUserService {
                     suggestions.add(UserSuggestionResponse.builder()
                             .id(p.getId())
                             .username(p.getUsername())
+                            .displayName(p.getDisplayName())
                             .profileImageUrl(p.getProfileImageUrl())
                             .followerCount(p.getFollowerCount())
                             .mutualConnections(mutualCount)
@@ -191,6 +190,7 @@ public class UserServiceImpl implements IUserService {
                     suggestions.add(UserSuggestionResponse.builder()
                             .id(p.getId())
                             .username(p.getUsername())
+                            .displayName(p.getDisplayName())
                             .profileImageUrl(p.getProfileImageUrl())
                             .followerCount(p.getFollowerCount())
                             .mutualConnections(0)
@@ -214,6 +214,7 @@ public class UserServiceImpl implements IUserService {
                     suggestions.add(UserSuggestionResponse.builder()
                             .id(user.getId())
                             .username(user.getUsernameField())
+                            .displayName(user.getDisplayName())
                             .profileImageUrl(user.getProfileImageUrl())
                             .followerCount(userFollowRepository.countByFollowingId(user.getId()))
                             .mutualConnections(0)

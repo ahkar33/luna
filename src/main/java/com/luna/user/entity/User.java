@@ -62,6 +62,9 @@ public class User implements UserDetails {
     @Column(name = "country")
     private String country;  // Full country name
     
+    @Column(name = "display_name", length = 100)
+    private String displayName;
+
     @Column(name = "bio", length = 500)
     private String bio;
 

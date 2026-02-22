@@ -2,7 +2,7 @@ package com.luna.user.controller;
 
 import com.luna.common.dto.PagedResponse;
 import com.luna.security.SecurityUtils;
-import com.luna.user.dto.UpdateBioRequest;
+import com.luna.user.dto.UpdateProfileRequest;
 import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.dto.UserSuggestionResponse;
 import com.luna.user.service.IUserService;
@@ -20,7 +20,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -50,23 +49,19 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
     
-    @PutMapping(value = "/profile/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Update profile image")
-    public ResponseEntity<UserProfileResponse> updateProfileImage(
-            @RequestPart("image") MultipartFile image,
+    @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Update profile",
+               description = "Update display name, bio, and/or profile image. All fields are optional.")
+    public ResponseEntity<UserProfileResponse> updateProfile(
+            @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestPart(value = "displayName", required = false) String displayName,
+            @RequestPart(value = "bio", required = false) String bio,
             Authentication authentication) {
         Long userId = SecurityUtils.getUserId(authentication);
-        UserProfileResponse response = userService.updateProfileImage(userId, image);
-        return ResponseEntity.ok(response);
-    }
-    
-    @PutMapping("/profile/bio")
-    @Operation(summary = "Update profile bio", description = "Update user bio (max 500 characters)")
-    public ResponseEntity<UserProfileResponse> updateBio(
-            @Valid @RequestBody UpdateBioRequest request,
-            Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
-        UserProfileResponse response = userService.updateBio(userId, request.getBio());
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setDisplayName(displayName);
+        request.setBio(bio);
+        UserProfileResponse response = userService.updateProfile(userId, request, image);
         return ResponseEntity.ok(response);
     }
     

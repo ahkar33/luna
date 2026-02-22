@@ -14,6 +14,7 @@ import java.util.List;
 public class UserSuggestionResponse {
     private Long id;
     private String username;
+    private String displayName;
     private String profileImageUrl;
     private Long followerCount;
     private Integer mutualConnections;

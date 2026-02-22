@@ -40,9 +40,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PostServiceImpl implements IPostService {
     
-    private static final long MAX_TOTAL_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB total for images
-    private static final long MAX_TOTAL_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB total for videos
-    
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
     private final SavedPostRepository savedPostRepository;
@@ -59,81 +56,54 @@ public class PostServiceImpl implements IPostService {
     public PostResponse createPost(CreatePostRequest request, Long userId, List<MultipartFile> images, List<MultipartFile> videos) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
-        // Validate: can't have both images and videos
-        boolean hasImages = images != null && !images.isEmpty() && images.stream().anyMatch(f -> f != null && !f.isEmpty());
-        boolean hasVideos = videos != null && !videos.isEmpty() && videos.stream().anyMatch(f -> f != null && !f.isEmpty());
-        
+
+        boolean hasImages = images != null && images.stream().anyMatch(f -> f != null && !f.isEmpty());
+        boolean hasVideos = videos != null && videos.stream().anyMatch(f -> f != null && !f.isEmpty());
+
         if (hasImages && hasVideos) {
             throw new BadRequestException("Cannot upload both images and videos in the same post");
         }
-        
-        // Validate total image size
-        if (hasImages && images != null) {
-            long totalImageSize = images.stream()
-                .filter(f -> f != null && !f.isEmpty())
-                .mapToLong(MultipartFile::getSize)
-                .sum();
-            if (totalImageSize > MAX_TOTAL_IMAGE_SIZE) {
-                throw new BadRequestException("Total image size exceeds 50MB limit");
-            }
-        }
-        
-        // Validate total video size
-        if (hasVideos && videos != null) {
-            long totalVideoSize = videos.stream()
-                .filter(f -> f != null && !f.isEmpty())
-                .mapToLong(MultipartFile::getSize)
-                .sum();
-            if (totalVideoSize > MAX_TOTAL_VIDEO_SIZE) {
-                throw new BadRequestException("Total video size exceeds 100MB limit");
-            }
-        }
-        
+
         Post post = Post.builder()
             .title(request.getTitle())
             .content(request.getContent())
             .author(user)
             .likeCount(0L)
             .build();
-        
-        // Upload images
-        if (hasImages && images != null) {
+
+        if (hasImages) {
             List<String> imageUrls = new ArrayList<>();
             for (MultipartFile image : images) {
                 if (image != null && !image.isEmpty()) {
-                    String imageUrl = cloudinaryService.uploadImage(image, "posts");
-                    imageUrls.add(imageUrl);
+                    imageUrls.add(cloudinaryService.uploadImage(image, "posts"));
                 }
             }
             if (!imageUrls.isEmpty()) {
                 post.setImageUrls(toJson(imageUrls));
             }
         }
-        
-        // Upload videos
-        if (hasVideos && videos != null) {
+
+        if (hasVideos) {
             List<String> videoUrls = new ArrayList<>();
             for (MultipartFile video : videos) {
                 if (video != null && !video.isEmpty()) {
-                    String videoUrl = cloudinaryService.uploadVideo(video, "posts");
-                    videoUrls.add(videoUrl);
+                    videoUrls.add(cloudinaryService.uploadVideo(video, "posts"));
                 }
             }
             if (!videoUrls.isEmpty()) {
                 post.setVideoUrls(toJson(videoUrls));
             }
         }
-        
+
         post = postRepository.save(post);
-        
+
         // Process hashtags from content
         hashtagService.processHashtags(post);
-        
+
         // Log activity
-        activityService.logActivity(userId, ActivityType.POST_CREATE, "POST", 
+        activityService.logActivity(userId, ActivityType.POST_CREATE, "POST",
             post.getId(), null, null);
-        
+
         return mapToPostResponse(post, userId, false);
     }
     

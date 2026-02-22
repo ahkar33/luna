@@ -37,7 +37,7 @@ public class PostController {
     
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Create a new post with optional images or videos",
-               description = "Upload unlimited images (max 50MB total) OR unlimited videos (max 100MB total). Cannot mix images and videos.")
+               description = "Upload images OR videos (not both). Supported image types: JPEG, PNG, WEBP. Video types: MP4, WEBM, MOV.")
     public ResponseEntity<PostResponse> createPost(
             @Valid @ModelAttribute CreatePostRequest request,
             @RequestPart(name = "images", required = false) List<MultipartFile> images,

@@ -47,6 +47,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = """
         SELECT u.id AS id,
                u.username AS username,
+               u.display_name AS displayName,
                u.profile_image_url AS profileImageUrl,
                u.country_code AS countryCode,
                COUNT(DISTINCT uf.follower_id) AS mutualConnectionCount,
@@ -58,7 +59,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
           AND u.is_active = true
           AND u.email_verified = true
           AND u.id NOT IN (SELECT uf3.following_id FROM user_follows uf3 WHERE uf3.follower_id = :userId)
-        GROUP BY u.id, u.username, u.profile_image_url, u.country_code
+        GROUP BY u.id, u.username, u.display_name, u.profile_image_url, u.country_code
         ORDER BY mutualConnectionCount DESC, followerCount DESC
         LIMIT :limit
         """, nativeQuery = true)
@@ -68,6 +69,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query(value = """
         SELECT u.id AS id,
                u.username AS username,
+               u.display_name AS displayName,
                u.profile_image_url AS profileImageUrl,
                u.country_code AS countryCode,
                0 AS mutualConnectionCount,

@@ -1,15 +1,14 @@
 package com.luna.user.dto;
 
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class UpdateBioRequest {
-    
+public class UpdateProfileRequest {
+
+    @Size(max = 100, message = "Display name must be less than 100 characters")
+    private String displayName;
+
     @Size(max = 500, message = "Bio must be less than 500 characters")
     private String bio;
 }
