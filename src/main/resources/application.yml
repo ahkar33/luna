@@ -40,6 +40,12 @@ spring:
     locations: classpath:db/migration
     validate-on-migrate: true
 
+  # Redis Configuration
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      timeout: 2000ms
+
   # Mail Configuration
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
