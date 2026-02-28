@@ -4,6 +4,7 @@ import com.luna.activity.entity.ActivityType;
 import com.luna.activity.service.IActivityService;
 import com.luna.common.exception.BadRequestException;
 import com.luna.common.exception.ResourceNotFoundException;
+import com.luna.notification.service.INotificationService;
 import com.luna.user.dto.UserProfileResponse;
 import com.luna.user.entity.User;
 import com.luna.user.entity.UserFollow;
@@ -19,10 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class FollowServiceImpl implements IFollowService {
-    
+
     private final UserFollowRepository userFollowRepository;
     private final UserRepository userRepository;
     private final IActivityService activityService;
+    private final INotificationService notificationService;
     
     @Override
     @Transactional
@@ -49,8 +51,11 @@ public class FollowServiceImpl implements IFollowService {
         userFollowRepository.save(userFollow);
         
         // Log activity
-        activityService.logActivity(followerId, ActivityType.FOLLOW, "USER", 
+        activityService.logActivity(followerId, ActivityType.FOLLOW, "USER",
             followingId, followingId, null);
+
+        // Send push notification (async, Redis-gated)
+        notificationService.sendFollowNotification(followerId, followingId);
     }
     
     @Override

@@ -44,7 +44,7 @@ Redis key: `notification:follow:cooldown:{followerId}:{followedId}` (TTL: 1 hour
 
 ### Step 3 — Database Migration
 
-- [ ] Create `src/main/resources/db/migration/V15__create_user_fcm_tokens.sql`:
+- [x] Create `src/main/resources/db/migration/V18__create_user_fcm_tokens.sql` ✓:
   ```sql
   CREATE TABLE user_fcm_tokens (
       id           BIGSERIAL PRIMARY KEY,
@@ -63,22 +63,22 @@ Redis key: `notification:follow:cooldown:{followerId}:{followedId}` (TTL: 1 hour
 
 ### Step 4 — Firebase Setup
 
-- [ ] Create `src/main/java/com/luna/config/FirebaseConfig.java`
-  - Read `FIREBASE_CREDENTIALS_JSON` from env, parse as `InputStream`
-  - Build `FirebaseOptions` with `GoogleCredentials.fromStream(...)`
-  - Initialize `FirebaseApp` (guard against double-init with `FirebaseApp.getApps()`)
-  - Expose a `FirebaseMessaging` bean
+- [x] Create `src/main/java/com/luna/config/FirebaseConfig.java` ✓
+  - Reads `FIREBASE_CREDENTIALS_JSON` from env, parses as `ByteArrayInputStream`
+  - Builds `FirebaseOptions` with `GoogleCredentials.fromStream(...)`
+  - Guards against double-init with `FirebaseApp.getApps()`
+  - Exposes `FirebaseApp` and `FirebaseMessaging` beans
 
 ---
 
 ### Step 5 — FCM Token Entity & Repository
 
-- [ ] Create `com/luna/notification/entity/UserFcmToken.java`
+- [x] Create `com/luna/notification/entity/UserFcmToken.java` ✓
   - Fields: `id`, `user` (ManyToOne → User), `fcmToken`, `platform`, `deviceName`,
     `createdAt`, `lastUsedAt`
   - `@Table(name = "user_fcm_tokens")`
 
-- [ ] Create `com/luna/notification/repository/UserFcmTokenRepository.java`
+- [x] Create `com/luna/notification/repository/UserFcmTokenRepository.java` ✓
   ```java
   List<UserFcmToken> findByUserId(Long userId);
   Optional<UserFcmToken> findByFcmToken(String fcmToken);
@@ -89,22 +89,22 @@ Redis key: `notification:follow:cooldown:{followerId}:{followedId}` (TTL: 1 hour
 
 ### Step 6 — DTOs
 
-- [ ] Create `com/luna/notification/dto/RegisterFcmTokenRequest.java`
+- [x] Create `com/luna/notification/dto/RegisterFcmTokenRequest.java` ✓
   - Fields: `fcmToken` (required), `platform` (optional), `deviceName` (optional)
 
-- [ ] Create `com/luna/notification/dto/NotificationPayload.java` (internal record)
+- [x] Create `com/luna/notification/dto/NotificationPayload.java` (internal record) ✓
   - Fields: `title`, `body`, `data` (Map<String, String>)
 
 ---
 
 ### Step 7 — FCM Token Controller
 
-- [ ] Create `com/luna/notification/controller/FcmTokenController.java`
+- [x] Create `com/luna/notification/controller/FcmTokenController.java` ✓
 
   | Method | Path | What it does |
   |---|---|---|
-  | `POST` | `/api/v1/users/me/fcm-tokens` | Save token for the authenticated user |
-  | `DELETE` | `/api/v1/users/me/fcm-tokens/{token}` | Remove a specific token (call on logout) |
+  | `POST` | `/api/users/me/fcm-tokens` | Save token for the authenticated user |
+  | `DELETE` | `/api/users/me/fcm-tokens/{token}` | Remove a specific token (call on logout) |
 
   - `POST`: upsert — if the token already exists, just update `lastUsedAt`; if it belongs
     to a different user, re-assign it (the old device logged out)
@@ -114,36 +114,34 @@ Redis key: `notification:follow:cooldown:{followerId}:{followedId}` (TTL: 1 hour
 
 ### Step 8 — FcmService (Firebase wrapper)
 
-- [ ] Create `com/luna/notification/service/IFcmService.java`
+- [x] Create `com/luna/notification/service/IFcmService.java` ✓
   ```java
   void sendToUser(Long userId, NotificationPayload payload);
   ```
 
-- [ ] Create `com/luna/notification/service/impl/FcmServiceImpl.java`
-  - Fetch all FCM tokens for `userId` from the repository
-  - If no tokens → return early (user has no registered devices)
-  - Build a `MulticastMessage` with `Notification` + data map
-  - Call `FirebaseMessaging.sendEachForMulticast(...)`
-  - Iterate `BatchResponse` — for any token where the response error code is
-    `UNREGISTERED` or `INVALID_ARGUMENT`, delete that token from the DB
+- [x] Create `com/luna/notification/service/impl/FcmServiceImpl.java` ✓
+  - Fetches all FCM tokens for `userId` from the repository
+  - If no tokens → returns early (user has no registered devices)
+  - Builds a `MulticastMessage` with `Notification` + data map
+  - Calls `FirebaseMessaging.sendEachForMulticast(...)`
+  - Iterates `BatchResponse` — for any token where the response error code is
+    `UNREGISTERED` or `INVALID_ARGUMENT`, deletes that token from the DB
     (stale token auto-cleanup)
 
 ---
 
 ### Step 9 — NotificationService (cooldown gate)
 
-- [ ] Create `com/luna/notification/service/INotificationService.java`
+- [x] Create `com/luna/notification/service/INotificationService.java` ✓
   ```java
   void sendFollowNotification(Long followerId, Long followedUserId);
   ```
 
-- [ ] Create `com/luna/notification/service/impl/NotificationServiceImpl.java`
-  - Annotate `sendFollowNotification` with `@Async` (runs off the HTTP thread)
-  - Build Redis key: `notification:follow:cooldown:{followerId}:{followedUserId}`
-  - Use `StringRedisTemplate.hasKey(key)`:
-    - `true` → return immediately (suppressed)
-    - `false` → `opsForValue().set(key, "1", 1, TimeUnit.HOURS)` then continue
-  - Fetch follower's `displayName` / `username` from `UserRepository`
+- [x] Create `com/luna/notification/service/impl/NotificationServiceImpl.java` ✓
+  - `sendFollowNotification` annotated with `@Async` (runs off the HTTP thread)
+  - Redis key: `notification:follow:cooldown:{followerId}:{followedUserId}` with 1-hour TTL
+  - Uses `displayName` if set, falls back to `username`
+  - Errors caught and logged — notification failure never breaks the follow flow
   - Build `NotificationPayload`:
     ```
     title: "{followerName} started following you"
@@ -156,12 +154,13 @@ Redis key: `notification:follow:cooldown:{followerId}:{followedId}` (TTL: 1 hour
 
 ### Step 10 — Wire into FollowServiceImpl
 
-- [ ] Inject `INotificationService` into `FollowServiceImpl`
-- [ ] At the end of `followUser()`, after the existing `activityService.logActivity(...)` call, add:
+- [x] Inject `INotificationService` into `FollowServiceImpl` ✓
+- [x] At the end of `followUser()`, after the existing `activityService.logActivity(...)` call, added:
   ```java
   notificationService.sendFollowNotification(followerId, followingId);
   ```
-- [ ] No changes to `unfollowUser()` — Redis key expires on its own
+- [x] No changes to `unfollowUser()` — Redis key expires on its own ✓
+- [x] Added `@EnableAsync` to `LunaApplication` (was missing, also fixes existing activity logging) ✓
 
 ---
 

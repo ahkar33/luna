@@ -77,6 +77,10 @@ service:
 cloudinary:
   url: ${CLOUDINARY_URL}
 
+# Firebase Configuration
+firebase:
+  credentials-json: ${FIREBASE_CREDENTIALS_JSON}
+
 # OpenAPI/Swagger Configuration
 springdoc:
   api-docs:
