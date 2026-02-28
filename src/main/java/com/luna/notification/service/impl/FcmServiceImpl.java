@@ -8,6 +8,7 @@ import com.luna.notification.service.IFcmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ public class FcmServiceImpl implements IFcmService {
     private final UserFcmTokenRepository userFcmTokenRepository;
 
     @Override
+    @Transactional
     public void sendToUser(Long userId, NotificationPayload payload) {
         List<UserFcmToken> tokens = userFcmTokenRepository.findByUserId(userId);
         if (tokens.isEmpty()) {
