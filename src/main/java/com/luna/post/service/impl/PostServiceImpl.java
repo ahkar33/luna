@@ -35,11 +35,12 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl implements IPostService {
-    
+
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
     private final SavedPostRepository savedPostRepository;
@@ -50,10 +51,10 @@ public class PostServiceImpl implements IPostService {
     private final CloudinaryService cloudinaryService;
     private final HashtagService hashtagService;
     private final ObjectMapper objectMapper;
-    
+
     @Override
     @Transactional
-    public PostResponse createPost(CreatePostRequest request, Long userId, List<MultipartFile> images, List<MultipartFile> videos) {
+    public PostResponse createPost(CreatePostRequest request, UUID userId, List<MultipartFile> images, List<MultipartFile> videos) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -106,127 +107,123 @@ public class PostServiceImpl implements IPostService {
 
         return mapToPostResponse(post, userId, false);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
-    public PostResponse getPostById(Long postId, Long currentUserId) {
+    public PostResponse getPostById(UUID postId, UUID currentUserId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        
+
         if (post.isDeleted()) {
             throw new ResourceNotFoundException("Post not found");
         }
-        
-        boolean isLiked = currentUserId != null && 
+
+        boolean isLiked = currentUserId != null &&
             postLikeRepository.existsByPostIdAndUserId(postId, currentUserId);
-        
+
         return mapToPostResponse(post, currentUserId, isLiked);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
-    public Page<PostResponse> getUserPosts(Long userId, Long currentUserId, Pageable pageable) {
+    public Page<PostResponse> getUserPosts(UUID userId, UUID currentUserId, Pageable pageable) {
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found");
         }
-        
+
         Page<Post> posts = postRepository.findByAuthorIdOrderByCreatedAtDesc(userId, pageable);
-        
+
         return posts.map(post -> {
-            boolean isLiked = currentUserId != null && 
+            boolean isLiked = currentUserId != null &&
                 postLikeRepository.existsByPostIdAndUserId(post.getId(), currentUserId);
             return mapToPostResponse(post, currentUserId, isLiked);
         });
     }
-    
+
     @Override
     @Transactional(readOnly = true)
-    public Page<PostResponse> getTimelinePosts(Long userId, Pageable pageable) {
+    public Page<PostResponse> getTimelinePosts(UUID userId, Pageable pageable) {
         Page<Post> posts = postRepository.findTimelinePosts(userId, pageable);
-        
+
         return posts.map(post -> {
             boolean isLiked = postLikeRepository.existsByPostIdAndUserId(post.getId(), userId);
             return mapToPostResponse(post, userId, isLiked);
         });
     }
-    
+
     @Override
     @Transactional
-    public void deletePost(Long postId, Long userId) {
+    public void deletePost(UUID postId, UUID userId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        
+
         if (!post.getAuthor().getId().equals(userId)) {
             throw new UnauthorizedException("You can only delete your own posts");
         }
-        
+
         if (post.isDeleted()) {
             throw new BadRequestException("Post is already deleted");
         }
-        
+
         post.setDeletedAt(java.time.LocalDateTime.now());
         postRepository.save(post);
-        
+
         // Log activity
-        activityService.logActivity(userId, ActivityType.POST_DELETE, "POST", 
+        activityService.logActivity(userId, ActivityType.POST_DELETE, "POST",
             postId, null, null);
     }
-    
+
     @Override
     @Transactional
-    public void restorePost(Long postId, Long userId) {
+    public void restorePost(UUID postId, UUID userId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        
+
         if (!post.getAuthor().getId().equals(userId)) {
             throw new UnauthorizedException("You can only restore your own posts");
         }
-        
+
         if (!post.isDeleted()) {
             throw new BadRequestException("Post is not deleted");
         }
-        
+
         if (post.isPermanentlyDeletable()) {
             throw new BadRequestException("Post cannot be restored after 30 days");
         }
-        
+
         post.setDeletedAt(null);
         postRepository.save(post);
     }
-    
+
     @Override
     @Transactional
     public int cleanupOldDeletedPosts() {
         java.time.LocalDateTime cutoffDate = java.time.LocalDateTime.now().minusDays(30);
         java.util.List<Post> postsToDelete = postRepository.findPostsToHardDelete(cutoffDate);
-        
+
         if (postsToDelete.isEmpty()) {
             return 0;
         }
-        
-        // Delete media from Cloudinary and posts in batches
+
         int batchSize = 100;
         int totalDeleted = 0;
-        
+
         for (int i = 0; i < postsToDelete.size(); i += batchSize) {
             int end = Math.min(i + batchSize, postsToDelete.size());
             java.util.List<Post> batch = postsToDelete.subList(i, end);
-            
-            // Delete media for each post in the batch
+
             for (Post post : batch) {
                 deletePostMedia(post);
             }
-            
-            // Delete posts from database
+
             postRepository.deleteAll(batch);
             totalDeleted += batch.size();
         }
-        
+
         return totalDeleted;
     }
-    
+
     private void deletePostMedia(Post post) {
-        // Delete images
         List<String> imageUrls = fromJson(post.getImageUrls());
         if (imageUrls != null) {
             for (String imageUrl : imageUrls) {
@@ -236,8 +233,7 @@ public class PostServiceImpl implements IPostService {
                 }
             }
         }
-        
-        // Delete videos
+
         List<String> videoUrls = fromJson(post.getVideoUrls());
         if (videoUrls != null) {
             for (String videoUrl : videoUrls) {
@@ -248,129 +244,129 @@ public class PostServiceImpl implements IPostService {
             }
         }
     }
-    
+
     @Override
     @Transactional
-    public PostResponse likePost(Long postId, Long userId) {
+    public PostResponse likePost(UUID postId, UUID userId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        
+
         if (post.isDeleted()) {
             throw new ResourceNotFoundException("Post not found");
         }
-        
+
         if (postLikeRepository.existsByPostIdAndUserId(postId, userId)) {
             throw new BadRequestException("You have already liked this post");
         }
-        
+
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
+
         PostLike postLike = PostLike.builder()
             .post(post)
             .user(user)
             .build();
-        
+
         postLikeRepository.save(postLike);
-        
+
         post.setLikeCount(post.getLikeCount() + 1);
         post = postRepository.save(post);
-        
+
         // Log activity
-        activityService.logActivity(userId, ActivityType.LIKE, "POST", 
+        activityService.logActivity(userId, ActivityType.LIKE, "POST",
             postId, post.getAuthor().getId(), null);
-        
+
         return mapToPostResponse(post, userId, true);
     }
-    
+
     @Override
     @Transactional
-    public PostResponse unlikePost(Long postId, Long userId) {
+    public PostResponse unlikePost(UUID postId, UUID userId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        
+
         if (post.isDeleted()) {
             throw new ResourceNotFoundException("Post not found");
         }
-        
+
         if (!postLikeRepository.existsByPostIdAndUserId(postId, userId)) {
             throw new BadRequestException("You have not liked this post");
         }
-        
+
         postLikeRepository.deleteByPostIdAndUserId(postId, userId);
-        
+
         post.setLikeCount(Math.max(0, post.getLikeCount() - 1));
         post = postRepository.save(post);
-        
+
         // Log activity
-        activityService.logActivity(userId, ActivityType.UNLIKE, "POST", 
+        activityService.logActivity(userId, ActivityType.UNLIKE, "POST",
             postId, post.getAuthor().getId(), null);
-        
+
         return mapToPostResponse(post, userId, false);
     }
-    
+
     @Override
     @Transactional
-    public PostResponse savePost(Long postId, Long userId) {
+    public PostResponse savePost(UUID postId, UUID userId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        
+
         if (post.isDeleted()) {
             throw new ResourceNotFoundException("Post not found");
         }
-        
+
         if (savedPostRepository.existsByUserIdAndPostId(userId, postId)) {
             throw new BadRequestException("Post already saved");
         }
-        
+
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
+
         SavedPost savedPost = SavedPost.builder()
             .user(user)
             .post(post)
             .build();
-        
+
         savedPostRepository.save(savedPost);
-        
+
         boolean isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId);
         return mapToPostResponse(post, userId, isLiked);
     }
-    
+
     @Override
     @Transactional
-    public PostResponse unsavePost(Long postId, Long userId) {
+    public PostResponse unsavePost(UUID postId, UUID userId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        
+
         if (!savedPostRepository.existsByUserIdAndPostId(userId, postId)) {
             throw new BadRequestException("Post not saved");
         }
-        
+
         savedPostRepository.deleteByUserIdAndPostId(userId, postId);
-        
+
         boolean isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId);
         return mapToPostResponse(post, userId, isLiked);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
-    public Page<PostResponse> getSavedPosts(Long userId, Pageable pageable) {
+    public Page<PostResponse> getSavedPosts(UUID userId, Pageable pageable) {
         Page<SavedPost> savedPosts = savedPostRepository.findByUserIdOrderBySavedAtDesc(userId, pageable);
-        
+
         return savedPosts.map(saved -> {
             Post post = saved.getPost();
             boolean isLiked = postLikeRepository.existsByPostIdAndUserId(post.getId(), userId);
             return mapToPostResponse(post, userId, isLiked);
         });
     }
-    
-    private PostResponse mapToPostResponse(Post post, Long userId, boolean isLiked) {
+
+    private PostResponse mapToPostResponse(Post post, UUID userId, boolean isLiked) {
         long commentCount = commentRepository.countByPostId(post.getId());
         long repostCount = repostRepository.countByOriginalPostId(post.getId());
         boolean isSaved = userId != null && savedPostRepository.existsByUserIdAndPostId(userId, post.getId());
         boolean isReposted = userId != null && repostRepository.existsByUserIdAndOriginalPostId(userId, post.getId());
-        
+
         return PostResponse.builder()
             .id(post.getId())
             .title(post.getTitle())
@@ -393,66 +389,66 @@ public class PostServiceImpl implements IPostService {
             .updatedAt(post.getUpdatedAt())
             .build();
     }
-    
+
     @Override
     @Transactional
-    public RepostResponse repost(Long postId, Long userId, String quote) {
+    public RepostResponse repost(UUID postId, UUID userId, String quote) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        
+
         if (post.isDeleted()) {
             throw new ResourceNotFoundException("Post not found");
         }
-        
+
         if (post.getAuthor().getId().equals(userId)) {
             throw new BadRequestException("You cannot repost your own post");
         }
-        
+
         if (repostRepository.existsByUserIdAndOriginalPostId(userId, postId)) {
             throw new BadRequestException("You have already reposted this post");
         }
-        
+
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
+
         Repost repost = Repost.builder()
             .user(user)
             .originalPost(post)
             .quote(quote)
             .build();
-        
+
         repost = repostRepository.save(repost);
-        
+
         // Log activity
-        activityService.logActivity(userId, ActivityType.LIKE, "REPOST", 
+        activityService.logActivity(userId, ActivityType.LIKE, "REPOST",
             postId, post.getAuthor().getId(), null);
-        
+
         return mapToRepostResponse(repost, userId);
     }
-    
+
     @Override
     @Transactional
-    public void undoRepost(Long postId, Long userId) {
+    public void undoRepost(UUID postId, UUID userId) {
         if (!repostRepository.existsByUserIdAndOriginalPostId(userId, postId)) {
             throw new BadRequestException("You have not reposted this post");
         }
-        
+
         repostRepository.deleteByUserIdAndOriginalPostId(userId, postId);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
-    public Page<RepostResponse> getUserReposts(Long userId, Long currentUserId, Pageable pageable) {
+    public Page<RepostResponse> getUserReposts(UUID userId, UUID currentUserId, Pageable pageable) {
         Page<Repost> reposts = repostRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        
+
         return reposts.map(repost -> mapToRepostResponse(repost, currentUserId));
     }
-    
-    private RepostResponse mapToRepostResponse(Repost repost, Long currentUserId) {
+
+    private RepostResponse mapToRepostResponse(Repost repost, UUID currentUserId) {
         Post originalPost = repost.getOriginalPost();
-        boolean isLiked = currentUserId != null && 
+        boolean isLiked = currentUserId != null &&
             postLikeRepository.existsByPostIdAndUserId(originalPost.getId(), currentUserId);
-        
+
         return RepostResponse.builder()
             .id(repost.getId())
             .quote(repost.getQuote())
@@ -465,7 +461,7 @@ public class PostServiceImpl implements IPostService {
             .createdAt(repost.getCreatedAt())
             .build();
     }
-    
+
     private String toJson(List<String> list) {
         if (list == null || list.isEmpty()) {
             return null;
@@ -476,7 +472,7 @@ public class PostServiceImpl implements IPostService {
             throw new BadRequestException("Failed to process image URLs");
         }
     }
-    
+
     private List<String> fromJson(String json) {
         if (json == null || json.isEmpty()) {
             return Collections.emptyList();

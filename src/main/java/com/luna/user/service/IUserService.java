@@ -9,16 +9,17 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface IUserService extends UserDetailsService {
 
-    UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request, MultipartFile image);
-    
-    UserProfileResponse getUserProfile(Long userId, Long currentUserId);
-    
+    UserProfileResponse updateProfile(UUID userId, UpdateProfileRequest request, MultipartFile image);
+
+    UserProfileResponse getUserProfile(UUID userId, UUID currentUserId);
+
     UserProfileResponse getUserProfileByUsername(String username);
-    
-    List<UserSuggestionResponse> getSuggestedUsers(Long userId, int limit);
-    
+
+    List<UserSuggestionResponse> getSuggestedUsers(UUID userId, int limit);
+
     Page<UserProfileResponse> searchUsers(String query, Pageable pageable);
 }

@@ -6,11 +6,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface UserFcmTokenRepository extends JpaRepository<UserFcmToken, Long> {
+public interface UserFcmTokenRepository extends JpaRepository<UserFcmToken, UUID> {
 
-    List<UserFcmToken> findByUserId(Long userId);
+    List<UserFcmToken> findByUserId(UUID userId);
 
     Optional<UserFcmToken> findByFcmToken(String fcmToken);
 

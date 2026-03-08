@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,35 +32,35 @@ public class CommentServiceImpl implements ICommentService {
 
     @Override
     @Transactional
-    public CommentResponse createComment(Long postId, Long userId, CreateCommentRequest request) {
+    public CommentResponse createComment(UUID postId, UUID userId, CreateCommentRequest request) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
-        
+
         if (post.isDeleted()) {
             throw new BadRequestException("Cannot comment on a deleted post");
         }
-        
+
         User author = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
+
         int depth = 0;
         Comment parent = null;
-        
+
         if (request.getParentId() != null) {
             parent = commentRepository.findById(request.getParentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Parent comment not found"));
-            
+
             if (!parent.getPost().getId().equals(postId)) {
                 throw new BadRequestException("Parent comment does not belong to this post");
             }
-            
+
             if (parent.getDepth() >= Comment.MAX_DEPTH) {
                 throw new BadRequestException("Maximum reply depth reached. Reply to the parent comment instead.");
             }
-            
+
             depth = parent.getDepth() + 1;
         }
-        
+
         Comment comment = Comment.builder()
             .content(request.getContent())
             .post(post)
@@ -67,77 +68,77 @@ public class CommentServiceImpl implements ICommentService {
             .parent(parent)
             .depth(depth)
             .build();
-        
+
         comment = commentRepository.save(comment);
-        
+
         return mapToResponse(comment, true);
     }
 
     @Override
     @Transactional
-    public CommentResponse updateComment(Long commentId, Long userId, String content) {
+    public CommentResponse updateComment(UUID commentId, UUID userId, String content) {
         Comment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
-        
+
         if (!comment.getAuthor().getId().equals(userId)) {
             throw new UnauthorizedException("You can only edit your own comments");
         }
-        
+
         comment.setContent(content);
         comment = commentRepository.save(comment);
-        
+
         return mapToResponse(comment, false);
     }
 
     @Override
     @Transactional
-    public void deleteComment(Long commentId, Long userId) {
+    public void deleteComment(UUID commentId, UUID userId) {
         Comment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
-        
+
         if (!comment.getAuthor().getId().equals(userId)) {
             throw new UnauthorizedException("You can only delete your own comments");
         }
-        
+
         commentRepository.delete(comment);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CommentResponse> getPostComments(Long postId, Pageable pageable) {
+    public Page<CommentResponse> getPostComments(UUID postId, Pageable pageable) {
         if (!postRepository.existsById(postId)) {
             throw new ResourceNotFoundException("Post not found");
         }
-        
+
         Page<Comment> comments = commentRepository.findByPostIdAndParentIsNullOrderByCreatedAtDesc(postId, pageable);
-        
+
         return comments.map(comment -> mapToResponse(comment, true));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public CommentResponse getComment(Long commentId) {
+    public CommentResponse getComment(UUID commentId) {
         Comment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
-        
+
         return mapToResponse(comment, true);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public long getCommentCount(Long postId) {
+    public long getCommentCount(UUID postId) {
         return commentRepository.countByPostId(postId);
     }
 
     private CommentResponse mapToResponse(Comment comment, boolean includeReplies) {
         List<CommentResponse> replies = null;
-        
+
         if (includeReplies && comment.getReplies() != null && !comment.getReplies().isEmpty()) {
             replies = comment.getReplies().stream()
                 .map(reply -> mapToResponse(reply, true))
                 .collect(Collectors.toList());
         }
-        
+
         return CommentResponse.builder()
             .id(comment.getId())
             .content(comment.getContent())

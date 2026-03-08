@@ -7,14 +7,15 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class PostResponse {
-    
-    private Long id;
+
+    private UUID id;
     private String title;
     private String content;
     private List<String> imageUrls;
@@ -28,13 +29,13 @@ public class PostResponse {
     private Boolean isRepostedByCurrentUser;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AuthorInfo {
-        private Long id;
+        private UUID id;
         private String username;
         private String email;
         private String profileImageUrl;

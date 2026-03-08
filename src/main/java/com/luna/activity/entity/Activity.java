@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "activities", indexes = {
@@ -23,8 +24,8 @@ import java.time.LocalDateTime;
 public class Activity {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -37,11 +38,11 @@ public class Activity {
     @Column(name = "entity_type", nullable = false, length = 50)
     private String entityType; // POST, COMMENT, etc.
     
-    @Column(name = "entity_id", nullable = false)
-    private Long entityId;
-    
+    @Column(name = "entity_id")
+    private UUID entityId;
+
     @Column(name = "target_user_id")
-    private Long targetUserId; // User who owns the post/comment that was liked
+    private UUID targetUserId; // User who owns the post/comment that was liked
     
     @Column(columnDefinition = "TEXT")
     private String metadata; // JSON for additional data

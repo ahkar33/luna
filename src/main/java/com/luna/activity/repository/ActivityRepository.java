@@ -7,15 +7,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 @Repository
-public interface ActivityRepository extends JpaRepository<Activity, Long> {
-    
-    Page<Activity> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
-    
+public interface ActivityRepository extends JpaRepository<Activity, UUID> {
+
+    Page<Activity> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
+
     Page<Activity> findByActivityTypeOrderByCreatedAtDesc(ActivityType activityType, Pageable pageable);
-    
+
     Page<Activity> findByUserIdAndActivityTypeOrderByCreatedAtDesc(
-        Long userId, ActivityType activityType, Pageable pageable);
-    
-    Page<Activity> findByTargetUserIdOrderByCreatedAtDesc(Long targetUserId, Pageable pageable);
+        UUID userId, ActivityType activityType, Pageable pageable);
+
+    Page<Activity> findByTargetUserIdOrderByCreatedAtDesc(UUID targetUserId, Pageable pageable);
 }

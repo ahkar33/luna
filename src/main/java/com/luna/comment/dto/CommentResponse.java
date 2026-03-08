@@ -7,30 +7,31 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentResponse {
-    
-    private Long id;
+
+    private UUID id;
     private String content;
     private AuthorInfo author;
-    private Long postId;
-    private Long parentId;
+    private UUID postId;
+    private UUID parentId;
     private Integer depth;
     private List<CommentResponse> replies;
     private Integer replyCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AuthorInfo {
-        private Long id;
+        private UUID id;
         private String username;
         private String profileImageUrl;
     }

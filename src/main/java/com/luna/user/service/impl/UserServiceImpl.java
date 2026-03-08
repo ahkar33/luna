@@ -35,21 +35,18 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Try to find by email first (new behavior)
         return userRepository.findByEmail(username)
-                // Fall back to finding by username field for backward compatibility with old tokens
                 .or(() -> userRepository.findByUsername(username))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
-    
+
     @Override
     @Transactional
-    public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request, MultipartFile image) {
+    public UserProfileResponse updateProfile(UUID userId, UpdateProfileRequest request, MultipartFile image) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (image != null && !image.isEmpty()) {
-            // Delete old profile image from Cloudinary before uploading new one
             if (user.getProfileImageUrl() != null) {
                 String oldPublicId = cloudinaryService.extractPublicId(user.getProfileImageUrl());
                 if (oldPublicId != null) {
@@ -79,30 +76,30 @@ public class UserServiceImpl implements IUserService {
         user = userRepository.save(user);
         return mapToUserProfileResponse(user, userId);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
-    public UserProfileResponse getUserProfile(Long userId, Long currentUserId) {
+    public UserProfileResponse getUserProfile(UUID userId, UUID currentUserId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return mapToUserProfileResponse(user, currentUserId);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public UserProfileResponse getUserProfileByUsername(String username) {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
+
         return mapToUserProfileResponse(user);
     }
-    
+
     private UserProfileResponse mapToUserProfileResponse(User user) {
         return mapToUserProfileResponse(user, null);
     }
 
-    private UserProfileResponse mapToUserProfileResponse(User user, Long currentUserId) {
+    private UserProfileResponse mapToUserProfileResponse(User user, UUID currentUserId) {
         long followerCount = userFollowRepository.countByFollowingId(user.getId());
         long followingCount = userFollowRepository.countByFollowerId(user.getId());
         long postCount = postRepository.countByAuthorId(user.getId());
@@ -124,12 +121,12 @@ public class UserServiceImpl implements IUserService {
             .isMyProfile(user.getId().equals(currentUserId))
             .build();
     }
-    
+
     @Override
     @Transactional(readOnly = true)
-    public List<UserSuggestionResponse> getSuggestedUsers(Long userId, int limit) {
+    public List<UserSuggestionResponse> getSuggestedUsers(UUID userId, int limit) {
         List<UserSuggestionResponse> suggestions = new ArrayList<>();
-        Set<Long> addedUserIds = new HashSet<>();
+        Set<UUID> addedUserIds = new HashSet<>();
 
         User currentUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -142,7 +139,6 @@ public class UserServiceImpl implements IUserService {
             List<UserSuggestionProjection> graphResults =
                     userRepository.findGraphBasedSuggestions(userId, limit * 2);
 
-            // Apply composite scoring
             List<UserSuggestionProjection> scored = graphResults.stream()
                     .sorted((a, b) -> Double.compare(
                             computeScore(b, userCountryCode),
@@ -150,13 +146,12 @@ public class UserServiceImpl implements IUserService {
                     .limit(limit)
                     .toList();
 
-            // Batch-fetch mutual connection usernames for all scored suggestions
-            List<Long> scoredIds = scored.stream().map(UserSuggestionProjection::getId).toList();
-            Map<Long, List<String>> mutualUsernamesMap = new HashMap<>();
+            List<UUID> scoredIds = scored.stream().map(UserSuggestionProjection::getId).toList();
+            Map<UUID, List<String>> mutualUsernamesMap = new HashMap<>();
             if (!scoredIds.isEmpty()) {
                 List<Object[]> mutualRows = userFollowRepository.findMutualConnectionUsernames(userId, scoredIds);
                 for (Object[] row : mutualRows) {
-                    Long suggestedId = ((Number) row[0]).longValue();
+                    UUID suggestedId = (UUID) row[0];
                     String mutualUsername = (String) row[1];
                     mutualUsernamesMap.computeIfAbsent(suggestedId, k -> new ArrayList<>()).add(mutualUsername);
                 }
@@ -185,9 +180,9 @@ public class UserServiceImpl implements IUserService {
         // TIER 2: Same country (geographic fallback)
         if (suggestions.size() < limit && userCountryCode != null && !userCountryCode.isBlank()) {
             int remaining = limit - suggestions.size();
-            List<Long> excludeIds = new ArrayList<>(addedUserIds);
+            List<UUID> excludeIds = new ArrayList<>(addedUserIds);
             if (excludeIds.isEmpty()) {
-                excludeIds.add(0L); // placeholder to avoid empty IN clause
+                excludeIds.add(new UUID(0, 0)); // nil UUID placeholder to avoid empty IN clause
             }
 
             List<UserSuggestionProjection> countryResults =
@@ -257,7 +252,6 @@ public class UserServiceImpl implements IUserService {
         if (mutualUsernames.size() >= 2 && mutualCount == 2) {
             return "Followed by " + mutualUsernames.get(0) + " and " + mutualUsernames.get(1);
         }
-        // Show up to 2 names + "and N others"
         int others = mutualCount - 2;
         return "Followed by " + mutualUsernames.get(0) + ", " + mutualUsernames.get(1)
                 + ", and " + others + (others == 1 ? " other" : " others");
@@ -269,7 +263,7 @@ public class UserServiceImpl implements IUserService {
         if (query == null || query.trim().isEmpty()) {
             return Page.empty(pageable);
         }
-        
+
         Page<User> users = userRepository.searchByUsername(query.trim(), pageable);
         return users.map(this::mapToUserProfileResponse);
     }

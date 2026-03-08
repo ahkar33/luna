@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/users/me/fcm-tokens")
 @RequiredArgsConstructor
@@ -30,7 +32,7 @@ public class FcmTokenController {
     public ResponseEntity<MessageResponse> registerToken(
             @Valid @RequestBody RegisterFcmTokenRequest request,
             Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         notificationService.registerToken(userId, request);
         return ResponseEntity.ok(new MessageResponse("FCM token registered successfully"));
     }

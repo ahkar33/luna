@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -25,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class NotificationServiceImpl implements INotificationService {
 
-    private static final String FOLLOW_COOLDOWN_KEY = "notification:follow:cooldown:%d:%d";
+    private static final String FOLLOW_COOLDOWN_KEY = "notification:follow:cooldown:%s:%s";
     private static final long FOLLOW_COOLDOWN_HOURS = 1;
 
     private final UserFcmTokenRepository userFcmTokenRepository;
@@ -35,7 +36,7 @@ public class NotificationServiceImpl implements INotificationService {
 
     @Override
     @Transactional
-    public void registerToken(Long userId, RegisterFcmTokenRequest request) {
+    public void registerToken(UUID userId, RegisterFcmTokenRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -70,7 +71,7 @@ public class NotificationServiceImpl implements INotificationService {
 
     @Override
     @Async
-    public void sendFollowNotification(Long followerId, Long followedUserId) {
+    public void sendFollowNotification(UUID followerId, UUID followedUserId) {
         try {
             String cooldownKey = String.format(FOLLOW_COOLDOWN_KEY, followerId, followedUserId);
 

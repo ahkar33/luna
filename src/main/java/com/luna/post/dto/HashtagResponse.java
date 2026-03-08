@@ -5,12 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class HashtagResponse {
-    private Long id;
+    private UUID id;
     private String name;
-    private Long postCount;  // Number of posts using this hashtag
+    private Long postCount;
 }

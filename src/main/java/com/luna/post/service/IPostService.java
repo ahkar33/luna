@@ -8,36 +8,37 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface IPostService {
 
-    PostResponse createPost(CreatePostRequest request, Long userId, List<MultipartFile> images, List<MultipartFile> videos);
-    
-    PostResponse getPostById(Long postId, Long currentUserId);
-    
-    Page<PostResponse> getUserPosts(Long userId, Long currentUserId, Pageable pageable);
-    
-    Page<PostResponse> getTimelinePosts(Long userId, Pageable pageable);
-    
-    void deletePost(Long postId, Long userId);
-    
-    void restorePost(Long postId, Long userId);
-    
+    PostResponse createPost(CreatePostRequest request, UUID userId, List<MultipartFile> images, List<MultipartFile> videos);
+
+    PostResponse getPostById(UUID postId, UUID currentUserId);
+
+    Page<PostResponse> getUserPosts(UUID userId, UUID currentUserId, Pageable pageable);
+
+    Page<PostResponse> getTimelinePosts(UUID userId, Pageable pageable);
+
+    void deletePost(UUID postId, UUID userId);
+
+    void restorePost(UUID postId, UUID userId);
+
     int cleanupOldDeletedPosts();
-    
-    PostResponse likePost(Long postId, Long userId);
-    
-    PostResponse unlikePost(Long postId, Long userId);
-    
-    PostResponse savePost(Long postId, Long userId);
-    
-    PostResponse unsavePost(Long postId, Long userId);
-    
-    Page<PostResponse> getSavedPosts(Long userId, Pageable pageable);
-    
-    RepostResponse repost(Long postId, Long userId, String quote);
-    
-    void undoRepost(Long postId, Long userId);
-    
-    Page<RepostResponse> getUserReposts(Long userId, Long currentUserId, Pageable pageable);
+
+    PostResponse likePost(UUID postId, UUID userId);
+
+    PostResponse unlikePost(UUID postId, UUID userId);
+
+    PostResponse savePost(UUID postId, UUID userId);
+
+    PostResponse unsavePost(UUID postId, UUID userId);
+
+    Page<PostResponse> getSavedPosts(UUID userId, Pageable pageable);
+
+    RepostResponse repost(UUID postId, UUID userId, String quote);
+
+    void undoRepost(UUID postId, UUID userId);
+
+    Page<RepostResponse> getUserReposts(UUID userId, UUID currentUserId, Pageable pageable);
 }

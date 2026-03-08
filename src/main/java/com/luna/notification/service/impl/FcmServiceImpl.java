@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +23,7 @@ public class FcmServiceImpl implements IFcmService {
 
     @Override
     @Transactional
-    public void sendToUser(Long userId, NotificationPayload payload) {
+    public void sendToUser(UUID userId, NotificationPayload payload) {
         List<UserFcmToken> tokens = userFcmTokenRepository.findByUserId(userId);
         if (tokens.isEmpty()) {
             log.debug("No FCM tokens found for user {}, skipping notification", userId);

@@ -18,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/hashtags")
@@ -52,7 +53,7 @@ public class HashtagController {
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of posts per page") @RequestParam(name = "size", defaultValue = "10") int size,
             Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<PostResponse> posts = hashtagService.getPostsByHashtag(hashtag, userId, pageable);
         return ResponseEntity.ok(PagedResponse.of(posts));

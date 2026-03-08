@@ -7,15 +7,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface SavedPostRepository extends JpaRepository<SavedPost, Long> {
-    
-    boolean existsByUserIdAndPostId(Long userId, Long postId);
-    
-    Optional<SavedPost> findByUserIdAndPostId(Long userId, Long postId);
-    
-    Page<SavedPost> findByUserIdOrderBySavedAtDesc(Long userId, Pageable pageable);
-    
-    void deleteByUserIdAndPostId(Long userId, Long postId);
+public interface SavedPostRepository extends JpaRepository<SavedPost, UUID> {
+
+    boolean existsByUserIdAndPostId(UUID userId, UUID postId);
+
+    Optional<SavedPost> findByUserIdAndPostId(UUID userId, UUID postId);
+
+    Page<SavedPost> findByUserIdOrderBySavedAtDesc(UUID userId, Pageable pageable);
+
+    void deleteByUserIdAndPostId(UUID userId, UUID postId);
 }

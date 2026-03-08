@@ -3,6 +3,8 @@ package com.luna.security;
 import com.luna.user.entity.User;
 import org.springframework.security.core.Authentication;
 
+import java.util.UUID;
+
 public class SecurityUtils {
 
     private SecurityUtils() {
@@ -15,7 +17,7 @@ public class SecurityUtils {
      * @return the user ID
      * @throws IllegalStateException if the principal is not a User object
      */
-    public static Long getUserId(Authentication authentication) {
+    public static UUID getUserId(Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
             throw new IllegalStateException("No authenticated user found");
         }

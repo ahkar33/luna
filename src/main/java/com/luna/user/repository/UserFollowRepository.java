@@ -11,19 +11,20 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
+public interface UserFollowRepository extends JpaRepository<UserFollow, UUID> {
 
-    Optional<UserFollow> findByFollowerIdAndFollowingId(Long followerId, Long followingId);
+    Optional<UserFollow> findByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
 
-    boolean existsByFollowerIdAndFollowingId(Long followerId, Long followingId);
+    boolean existsByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
 
-    void deleteByFollowerIdAndFollowingId(Long followerId, Long followingId);
+    void deleteByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
 
-    long countByFollowerId(Long followerId);
+    long countByFollowerId(UUID followerId);
 
-    long countByFollowingId(Long followingId);
+    long countByFollowingId(UUID followingId);
 
     // Count mutual followers between current user's following and a suggested user
     @Query("""
@@ -31,7 +32,7 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
         WHERE uf.following.id = :suggestedUserId
         AND uf.follower.id IN (SELECT uf2.following.id FROM UserFollow uf2 WHERE uf2.follower.id = :currentUserId)
         """)
-    int countMutualConnections(@Param("currentUserId") Long currentUserId, @Param("suggestedUserId") Long suggestedUserId);
+    int countMutualConnections(@Param("currentUserId") UUID currentUserId, @Param("suggestedUserId") UUID suggestedUserId);
 
     // Get list of followers (users who follow the specified user)
     @Query("""
@@ -39,7 +40,7 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
         WHERE uf.following.id = :userId
         ORDER BY uf.createdAt DESC
         """)
-    Page<User> findFollowersByUserId(@Param("userId") Long userId, Pageable pageable);
+    Page<User> findFollowersByUserId(@Param("userId") UUID userId, Pageable pageable);
 
     // Get list of following (users that the specified user follows)
     @Query("""
@@ -47,7 +48,7 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
         WHERE uf.follower.id = :userId
         ORDER BY uf.createdAt DESC
         """)
-    Page<User> findFollowingByUserId(@Param("userId") Long userId, Pageable pageable);
+    Page<User> findFollowingByUserId(@Param("userId") UUID userId, Pageable pageable);
 
     // Batch fetch mutual connection usernames for multiple suggested users at once
     // Returns [suggestedUserId, mutualUsername] pairs
@@ -60,8 +61,8 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
         ORDER BY uf.following_id, u.username
         """, nativeQuery = true)
     List<Object[]> findMutualConnectionUsernames(
-            @Param("currentUserId") Long currentUserId,
-            @Param("suggestedUserIds") List<Long> suggestedUserIds);
+            @Param("currentUserId") UUID currentUserId,
+            @Param("suggestedUserIds") List<UUID> suggestedUserIds);
 
     // Get mutual friends (users who follow each other)
     @Query(value = """
@@ -83,5 +84,5 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, Long> {
             AND uf2.following.id = :userId
         )
         """)
-    Page<User> findMutualFriends(@Param("userId") Long userId, Pageable pageable);
+    Page<User> findMutualFriends(@Param("userId") UUID userId, Pageable pageable);
 }

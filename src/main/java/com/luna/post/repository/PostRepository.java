@@ -10,22 +10,23 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface PostRepository extends JpaRepository<Post, Long> {
-    
+public interface PostRepository extends JpaRepository<Post, UUID> {
+
     @Query("SELECT p FROM Post p WHERE p.author.id = :authorId AND p.deletedAt IS NULL ORDER BY p.createdAt DESC")
-    Page<Post> findByAuthorIdOrderByCreatedAtDesc(@Param("authorId") Long authorId, Pageable pageable);
-    
+    Page<Post> findByAuthorIdOrderByCreatedAtDesc(@Param("authorId") UUID authorId, Pageable pageable);
+
     @Query("SELECT p FROM Post p WHERE p.author.id IN " +
            "(SELECT f.following.id FROM UserFollow f WHERE f.follower.id = :userId) " +
            "AND p.deletedAt IS NULL " +
            "ORDER BY p.createdAt DESC")
-    Page<Post> findTimelinePosts(@Param("userId") Long userId, Pageable pageable);
-    
+    Page<Post> findTimelinePosts(@Param("userId") UUID userId, Pageable pageable);
+
     @Query("SELECT p FROM Post p WHERE p.deletedAt IS NOT NULL AND p.deletedAt < :cutoffDate")
     List<Post> findPostsToHardDelete(@Param("cutoffDate") LocalDateTime cutoffDate);
-    
+
     @Query("""
         SELECT DISTINCT p FROM Post p
         JOIN PostHashtag ph ON ph.post.id = p.id
@@ -36,5 +37,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByHashtag(@Param("hashtagName") String hashtagName, Pageable pageable);
 
     @Query("SELECT COUNT(p) FROM Post p WHERE p.author.id = :authorId AND p.deletedAt IS NULL")
-    long countByAuthorId(@Param("authorId") Long authorId);
+    long countByAuthorId(@Param("authorId") UUID authorId);
 }

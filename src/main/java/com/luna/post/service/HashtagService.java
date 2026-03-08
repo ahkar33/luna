@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -133,7 +134,7 @@ public class HashtagService {
      * Get posts by hashtag
      */
     @Transactional(readOnly = true)
-    public Page<PostResponse> getPostsByHashtag(String hashtagName, Long currentUserId, Pageable pageable) {
+    public Page<PostResponse> getPostsByHashtag(String hashtagName, UUID currentUserId, Pageable pageable) {
         String name = hashtagName.toLowerCase().replaceAll("^#", "");
         
         Page<Post> posts = postRepository.findByHashtag(name, pageable);
@@ -141,7 +142,7 @@ public class HashtagService {
         return posts.map(post -> mapToPostResponse(post, currentUserId));
     }
     
-    private PostResponse mapToPostResponse(Post post, Long userId) {
+    private PostResponse mapToPostResponse(Post post, UUID userId) {
         boolean isLiked = userId != null && postLikeRepository.existsByPostIdAndUserId(post.getId(), userId);
         boolean isSaved = userId != null && savedPostRepository.existsByUserIdAndPostId(userId, post.getId());
         boolean isReposted = userId != null && repostRepository.existsByUserIdAndOriginalPostId(userId, post.getId());

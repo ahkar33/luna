@@ -10,15 +10,16 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface HashtagRepository extends JpaRepository<Hashtag, Long> {
-    
+public interface HashtagRepository extends JpaRepository<Hashtag, UUID> {
+
     Optional<Hashtag> findByName(String name);
-    
+
     // Search hashtags by prefix
     List<Hashtag> findByNameStartingWithOrderByNameAsc(String prefix, Pageable pageable);
-    
+
     // Get trending hashtags (most used in recent posts)
     @Query("""
         SELECT h FROM Hashtag h

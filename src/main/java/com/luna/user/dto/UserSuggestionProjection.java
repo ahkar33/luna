@@ -1,7 +1,9 @@
 package com.luna.user.dto;
 
+import java.util.UUID;
+
 public interface UserSuggestionProjection {
-    Long getId();
+    UUID getId();
     String getUsername();
     String getDisplayName();
     String getProfileImageUrl();

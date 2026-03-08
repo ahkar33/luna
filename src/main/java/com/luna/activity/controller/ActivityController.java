@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/activities")
 @RequiredArgsConstructor
@@ -32,7 +34,7 @@ public class ActivityController {
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of activities per page") @RequestParam(name = "size", defaultValue = "20") int size,
             Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<ActivityResponse> activities = activityService.getUserActivities(userId, pageable);
         return ResponseEntity.ok(PagedResponse.of(activities));
@@ -45,7 +47,7 @@ public class ActivityController {
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of activities per page") @RequestParam(name = "size", defaultValue = "20") int size,
             Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, size);
         Page<ActivityResponse> activities = activityService
             .getUserActivitiesByType(userId, activityType, pageable);
@@ -55,7 +57,7 @@ public class ActivityController {
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get activities for a specific user (activities on their content)")
     public ResponseEntity<PagedResponse<ActivityResponse>> getActivitiesForUser(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") UUID userId,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of activities per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size);

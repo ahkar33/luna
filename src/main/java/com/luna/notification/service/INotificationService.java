@@ -2,11 +2,13 @@ package com.luna.notification.service;
 
 import com.luna.notification.dto.RegisterFcmTokenRequest;
 
+import java.util.UUID;
+
 public interface INotificationService {
 
-    void registerToken(Long userId, RegisterFcmTokenRequest request);
+    void registerToken(UUID userId, RegisterFcmTokenRequest request);
 
     void unregisterToken(String fcmToken);
 
-    void sendFollowNotification(Long followerId, Long followedUserId);
+    void sendFollowNotification(UUID followerId, UUID followedUserId);
 }

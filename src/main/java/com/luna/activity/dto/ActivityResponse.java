@@ -7,28 +7,29 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ActivityResponse {
-    
-    private Long id;
+
+    private UUID id;
     private UserInfo user;
     private ActivityType activityType;
     private String entityType;
-    private Long entityId;
-    private Long targetUserId;
+    private UUID entityId;
+    private UUID targetUserId;
     private String metadata;
     private LocalDateTime createdAt;
-    
+
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class UserInfo {
-        private Long id;
+        private UUID id;
         private String username;
         private String email;
     }

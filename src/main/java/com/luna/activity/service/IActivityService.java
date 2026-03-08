@@ -5,14 +5,16 @@ import com.luna.activity.entity.ActivityType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.UUID;
+
 public interface IActivityService {
-    
-    void logActivity(Long userId, ActivityType activityType, String entityType, 
-                    Long entityId, Long targetUserId, String metadata);
-    
-    Page<ActivityResponse> getUserActivities(Long userId, Pageable pageable);
-    
-    Page<ActivityResponse> getUserActivitiesByType(Long userId, ActivityType activityType, Pageable pageable);
-    
-    Page<ActivityResponse> getActivitiesForUser(Long targetUserId, Pageable pageable);
+
+    void logActivity(UUID userId, ActivityType activityType, String entityType,
+                    UUID entityId, UUID targetUserId, String metadata);
+
+    Page<ActivityResponse> getUserActivities(UUID userId, Pageable pageable);
+
+    Page<ActivityResponse> getUserActivitiesByType(UUID userId, ActivityType activityType, Pageable pageable);
+
+    Page<ActivityResponse> getActivitiesForUser(UUID targetUserId, Pageable pageable);
 }

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
@@ -34,7 +35,7 @@ public class UserController {
     @GetMapping("/profile")
     @Operation(summary = "Get current user profile")
     public ResponseEntity<UserProfileResponse> getCurrentUserProfile(Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         UserProfileResponse response = userService.getUserProfile(userId, userId);
         return ResponseEntity.ok(response);
     }
@@ -42,9 +43,9 @@ public class UserController {
     @GetMapping("/{userId}/profile")
     @Operation(summary = "Get user profile by ID")
     public ResponseEntity<UserProfileResponse> getUserProfile(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") UUID userId,
             Authentication authentication) {
-        Long currentUserId = authentication != null ? SecurityUtils.getUserId(authentication) : null;
+        UUID currentUserId = authentication != null ? SecurityUtils.getUserId(authentication) : null;
         UserProfileResponse response = userService.getUserProfile(userId, currentUserId);
         return ResponseEntity.ok(response);
     }
@@ -58,7 +59,7 @@ public class UserController {
             @RequestPart(value = "displayName", required = false) String displayName,
             @RequestPart(value = "bio", required = false) String bio,
             Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         UpdateProfileRequest request = new UpdateProfileRequest();
         request.setUsername(username);
         request.setDisplayName(displayName);
@@ -74,7 +75,7 @@ public class UserController {
             @Parameter(description = "Number of suggestions to return (max: 50)", example = "10")
             @RequestParam(name = "limit", defaultValue = "10") int limit,
             Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         List<UserSuggestionResponse> suggestions = userService.getSuggestedUsers(userId, Math.min(limit, 50));
         return ResponseEntity.ok(suggestions);
     }

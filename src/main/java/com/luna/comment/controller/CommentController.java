@@ -20,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -33,10 +35,10 @@ public class CommentController {
     @Operation(summary = "Create a comment on a post",
                description = "Create a top-level comment or reply to an existing comment. Max nesting depth is 3 levels.")
     public ResponseEntity<CommentResponse> createComment(
-            @PathVariable("postId") Long postId,
+            @PathVariable("postId") UUID postId,
             @Valid @RequestBody CreateCommentRequest request,
             Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         CommentResponse response = commentService.createComment(postId, userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -45,7 +47,7 @@ public class CommentController {
     @Operation(summary = "Get comments for a post",
                description = "Returns paginated top-level comments with nested replies")
     public ResponseEntity<PagedResponse<CommentResponse>> getPostComments(
-            @PathVariable("postId") Long postId,
+            @PathVariable("postId") UUID postId,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of comments per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
@@ -55,7 +57,7 @@ public class CommentController {
 
     @GetMapping("/comments/{commentId}")
     @Operation(summary = "Get a single comment with its replies")
-    public ResponseEntity<CommentResponse> getComment(@PathVariable("commentId") Long commentId) {
+    public ResponseEntity<CommentResponse> getComment(@PathVariable("commentId") UUID commentId) {
         CommentResponse response = commentService.getComment(commentId);
         return ResponseEntity.ok(response);
     }
@@ -63,10 +65,10 @@ public class CommentController {
     @PutMapping("/comments/{commentId}")
     @Operation(summary = "Update a comment", description = "Only the comment author can update")
     public ResponseEntity<CommentResponse> updateComment(
-            @PathVariable("commentId") Long commentId,
+            @PathVariable("commentId") UUID commentId,
             @Valid @RequestBody CreateCommentRequest request,
             Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         CommentResponse response = commentService.updateComment(commentId, userId, request.getContent());
         return ResponseEntity.ok(response);
     }
@@ -74,16 +76,16 @@ public class CommentController {
     @DeleteMapping("/comments/{commentId}")
     @Operation(summary = "Delete a comment", description = "Only the comment author can delete. Deletes all replies too.")
     public ResponseEntity<MessageResponse> deleteComment(
-            @PathVariable("commentId") Long commentId,
+            @PathVariable("commentId") UUID commentId,
             Authentication authentication) {
-        Long userId = SecurityUtils.getUserId(authentication);
+        UUID userId = SecurityUtils.getUserId(authentication);
         commentService.deleteComment(commentId, userId);
         return ResponseEntity.ok(new MessageResponse("Comment deleted successfully"));
     }
 
     @GetMapping("/posts/{postId}/comments/count")
     @Operation(summary = "Get total comment count for a post")
-    public ResponseEntity<Long> getCommentCount(@PathVariable("postId") Long postId) {
+    public ResponseEntity<Long> getCommentCount(@PathVariable("postId") UUID postId) {
         long count = commentService.getCommentCount(postId);
         return ResponseEntity.ok(count);
     }

@@ -4,23 +4,25 @@ import com.luna.user.dto.UserProfileResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.UUID;
+
 public interface IFollowService {
 
-    void followUser(Long followerId, Long followingId);
+    void followUser(UUID followerId, UUID followingId);
 
-    void unfollowUser(Long followerId, Long followingId);
+    void unfollowUser(UUID followerId, UUID followingId);
 
-    boolean isFollowing(Long followerId, Long followingId);
+    boolean isFollowing(UUID followerId, UUID followingId);
 
-    boolean isMutualFollow(Long userId1, Long userId2);
+    boolean isMutualFollow(UUID userId1, UUID userId2);
 
-    long getFollowerCount(Long userId);
+    long getFollowerCount(UUID userId);
 
-    long getFollowingCount(Long userId);
+    long getFollowingCount(UUID userId);
 
-    Page<UserProfileResponse> getFollowers(Long userId, Pageable pageable);
+    Page<UserProfileResponse> getFollowers(UUID userId, Pageable pageable);
 
-    Page<UserProfileResponse> getFollowing(Long userId, Pageable pageable);
+    Page<UserProfileResponse> getFollowing(UUID userId, Pageable pageable);
 
-    Page<UserProfileResponse> getMutualFriends(Long userId, Pageable pageable);
+    Page<UserProfileResponse> getMutualFriends(UUID userId, Pageable pageable);
 }

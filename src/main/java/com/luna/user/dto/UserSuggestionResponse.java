@@ -6,19 +6,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserSuggestionResponse {
-    private Long id;
+    private UUID id;
     private String username;
     private String displayName;
     private String profileImageUrl;
     private Long followerCount;
     private Integer mutualConnections;
-    private String suggestionReason;  // e.g., "Popular", "Followed by john_doe, jane_doe, and 3 others"
-    private List<String> mutualConnectionUsernames;  // e.g., ["john_doe", "jane_doe"]
-    private Boolean isFollowing;  // Whether current user follows this suggested user
+    private String suggestionReason;
+    private List<String> mutualConnectionUsernames;
+    private Boolean isFollowing;
 }

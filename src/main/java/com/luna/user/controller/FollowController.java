@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -29,9 +31,9 @@ public class FollowController {
     @PostMapping("/{userId}/follow")
     @Operation(summary = "Follow a user")
     public ResponseEntity<MessageResponse> followUser(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") UUID userId,
             Authentication authentication) {
-        Long currentUserId = SecurityUtils.getUserId(authentication);
+        UUID currentUserId = SecurityUtils.getUserId(authentication);
         followService.followUser(currentUserId, userId);
         return ResponseEntity.ok(new MessageResponse("Successfully followed user"));
     }
@@ -39,40 +41,40 @@ public class FollowController {
     @DeleteMapping("/{userId}/follow")
     @Operation(summary = "Unfollow a user")
     public ResponseEntity<MessageResponse> unfollowUser(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") UUID userId,
             Authentication authentication) {
-        Long currentUserId = SecurityUtils.getUserId(authentication);
+        UUID currentUserId = SecurityUtils.getUserId(authentication);
         followService.unfollowUser(currentUserId, userId);
         return ResponseEntity.ok(new MessageResponse("Successfully unfollowed user"));
     }
 
     @GetMapping("/{userId}/followers/count")
     @Operation(summary = "Get follower count")
-    public ResponseEntity<Long> getFollowerCount(@PathVariable("userId") Long userId) {
+    public ResponseEntity<Long> getFollowerCount(@PathVariable("userId") UUID userId) {
         return ResponseEntity.ok(followService.getFollowerCount(userId));
     }
 
     @GetMapping("/{userId}/following/count")
     @Operation(summary = "Get following count")
-    public ResponseEntity<Long> getFollowingCount(@PathVariable("userId") Long userId) {
+    public ResponseEntity<Long> getFollowingCount(@PathVariable("userId") UUID userId) {
         return ResponseEntity.ok(followService.getFollowingCount(userId));
     }
 
     @GetMapping("/{userId}/is-following")
     @Operation(summary = "Check if current user is following another user")
     public ResponseEntity<Boolean> isFollowing(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") UUID userId,
             Authentication authentication) {
-        Long currentUserId = SecurityUtils.getUserId(authentication);
+        UUID currentUserId = SecurityUtils.getUserId(authentication);
         return ResponseEntity.ok(followService.isFollowing(currentUserId, userId));
     }
 
     @GetMapping("/{userId}/is-mutual")
     @Operation(summary = "Check if both users follow each other")
     public ResponseEntity<Boolean> isMutualFollow(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") UUID userId,
             Authentication authentication) {
-        Long currentUserId = SecurityUtils.getUserId(authentication);
+        UUID currentUserId = SecurityUtils.getUserId(authentication);
         return ResponseEntity.ok(followService.isMutualFollow(currentUserId, userId));
     }
 
@@ -80,7 +82,7 @@ public class FollowController {
     @Operation(summary = "Get list of followers",
                description = "Returns paginated list of users who follow the specified user")
     public ResponseEntity<PagedResponse<UserProfileResponse>> getFollowers(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") UUID userId,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of followers per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
@@ -92,7 +94,7 @@ public class FollowController {
     @Operation(summary = "Get list of following",
                description = "Returns paginated list of users that the specified user follows")
     public ResponseEntity<PagedResponse<UserProfileResponse>> getFollowing(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") UUID userId,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of users per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
@@ -107,7 +109,7 @@ public class FollowController {
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of mutual friends per page") @RequestParam(name = "size", defaultValue = "20") int size,
             Authentication authentication) {
-        Long currentUserId = SecurityUtils.getUserId(authentication);
+        UUID currentUserId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> mutualFriends = followService.getMutualFriends(currentUserId, pageable);
         return ResponseEntity.ok(PagedResponse.of(mutualFriends));
@@ -117,7 +119,7 @@ public class FollowController {
     @Operation(summary = "Get mutual friends",
                description = "Returns paginated list of users who both follow each other with the specified user")
     public ResponseEntity<PagedResponse<UserProfileResponse>> getMutualFriends(
-            @PathVariable("userId") Long userId,
+            @PathVariable("userId") UUID userId,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of mutual friends per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));

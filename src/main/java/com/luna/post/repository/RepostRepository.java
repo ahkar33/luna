@@ -7,17 +7,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface RepostRepository extends JpaRepository<Repost, Long> {
-    
-    boolean existsByUserIdAndOriginalPostId(Long userId, Long postId);
-    
-    Optional<Repost> findByUserIdAndOriginalPostId(Long userId, Long postId);
-    
-    Page<Repost> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
-    
-    void deleteByUserIdAndOriginalPostId(Long userId, Long postId);
-    
-    long countByOriginalPostId(Long postId);
+public interface RepostRepository extends JpaRepository<Repost, UUID> {
+
+    boolean existsByUserIdAndOriginalPostId(UUID userId, UUID postId);
+
+    Optional<Repost> findByUserIdAndOriginalPostId(UUID userId, UUID postId);
+
+    Page<Repost> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);
+
+    void deleteByUserIdAndOriginalPostId(UUID userId, UUID postId);
+
+    long countByOriginalPostId(UUID postId);
 }

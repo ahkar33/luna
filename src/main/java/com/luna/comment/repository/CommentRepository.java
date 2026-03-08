@@ -6,21 +6,23 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 @Repository
-public interface CommentRepository extends JpaRepository<Comment, Long> {
-    
+public interface CommentRepository extends JpaRepository<Comment, UUID> {
+
     // Get top-level comments for a post
-    Page<Comment> findByPostIdAndParentIsNullOrderByCreatedAtDesc(Long postId, Pageable pageable);
-    
+    Page<Comment> findByPostIdAndParentIsNullOrderByCreatedAtDesc(UUID postId, Pageable pageable);
+
     // Count top-level comments for a post
-    long countByPostIdAndParentIsNull(Long postId);
-    
+    long countByPostIdAndParentIsNull(UUID postId);
+
     // Count all comments for a post
-    long countByPostId(Long postId);
-    
+    long countByPostId(UUID postId);
+
     // Count replies for a comment
-    long countByParentId(Long parentId);
-    
+    long countByParentId(UUID parentId);
+
     // Check if user owns the comment
-    boolean existsByIdAndAuthorId(Long commentId, Long userId);
+    boolean existsByIdAndAuthorId(UUID commentId, UUID userId);
 }
