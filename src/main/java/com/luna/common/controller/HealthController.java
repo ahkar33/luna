@@ -1,5 +1,6 @@
 package com.luna.common.controller;
 
+import com.luna.common.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +16,10 @@ public class HealthController {
 
     @GetMapping("/health")
     @Operation(summary = "Health check", description = "Returns the health status of the API")
-    public ResponseEntity<Map<String, String>> health() {
+    public ResponseEntity<ApiResponse<Map<String, String>>> health() {
         Map<String, String> response = new HashMap<>();
         response.put("status", "UP");
         response.put("service", "Luna API");
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

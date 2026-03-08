@@ -1,6 +1,6 @@
 package com.luna.user.controller;
 
-import com.luna.auth.dto.MessageResponse;
+import com.luna.common.dto.ApiResponse;
 import com.luna.common.dto.PagedResponse;
 import com.luna.security.SecurityUtils;
 import com.luna.user.dto.UserProfileResponse;
@@ -30,100 +30,100 @@ public class FollowController {
 
     @PostMapping("/{userId}/follow")
     @Operation(summary = "Follow a user")
-    public ResponseEntity<MessageResponse> followUser(
+    public ResponseEntity<ApiResponse<Void>> followUser(
             @PathVariable("userId") UUID userId,
             Authentication authentication) {
         UUID currentUserId = SecurityUtils.getUserId(authentication);
         followService.followUser(currentUserId, userId);
-        return ResponseEntity.ok(new MessageResponse("Successfully followed user"));
+        return ResponseEntity.ok(ApiResponse.success("Successfully followed user"));
     }
 
     @DeleteMapping("/{userId}/follow")
     @Operation(summary = "Unfollow a user")
-    public ResponseEntity<MessageResponse> unfollowUser(
+    public ResponseEntity<ApiResponse<Void>> unfollowUser(
             @PathVariable("userId") UUID userId,
             Authentication authentication) {
         UUID currentUserId = SecurityUtils.getUserId(authentication);
         followService.unfollowUser(currentUserId, userId);
-        return ResponseEntity.ok(new MessageResponse("Successfully unfollowed user"));
+        return ResponseEntity.ok(ApiResponse.success("Successfully unfollowed user"));
     }
 
     @GetMapping("/{userId}/followers/count")
     @Operation(summary = "Get follower count")
-    public ResponseEntity<Long> getFollowerCount(@PathVariable("userId") UUID userId) {
-        return ResponseEntity.ok(followService.getFollowerCount(userId));
+    public ResponseEntity<ApiResponse<Long>> getFollowerCount(@PathVariable("userId") UUID userId) {
+        return ResponseEntity.ok(ApiResponse.success(followService.getFollowerCount(userId)));
     }
 
     @GetMapping("/{userId}/following/count")
     @Operation(summary = "Get following count")
-    public ResponseEntity<Long> getFollowingCount(@PathVariable("userId") UUID userId) {
-        return ResponseEntity.ok(followService.getFollowingCount(userId));
+    public ResponseEntity<ApiResponse<Long>> getFollowingCount(@PathVariable("userId") UUID userId) {
+        return ResponseEntity.ok(ApiResponse.success(followService.getFollowingCount(userId)));
     }
 
     @GetMapping("/{userId}/is-following")
     @Operation(summary = "Check if current user is following another user")
-    public ResponseEntity<Boolean> isFollowing(
+    public ResponseEntity<ApiResponse<Boolean>> isFollowing(
             @PathVariable("userId") UUID userId,
             Authentication authentication) {
         UUID currentUserId = SecurityUtils.getUserId(authentication);
-        return ResponseEntity.ok(followService.isFollowing(currentUserId, userId));
+        return ResponseEntity.ok(ApiResponse.success(followService.isFollowing(currentUserId, userId)));
     }
 
     @GetMapping("/{userId}/is-mutual")
     @Operation(summary = "Check if both users follow each other")
-    public ResponseEntity<Boolean> isMutualFollow(
+    public ResponseEntity<ApiResponse<Boolean>> isMutualFollow(
             @PathVariable("userId") UUID userId,
             Authentication authentication) {
         UUID currentUserId = SecurityUtils.getUserId(authentication);
-        return ResponseEntity.ok(followService.isMutualFollow(currentUserId, userId));
+        return ResponseEntity.ok(ApiResponse.success(followService.isMutualFollow(currentUserId, userId)));
     }
 
     @GetMapping("/{userId}/followers")
     @Operation(summary = "Get list of followers",
                description = "Returns paginated list of users who follow the specified user")
-    public ResponseEntity<PagedResponse<UserProfileResponse>> getFollowers(
+    public ResponseEntity<ApiResponse<PagedResponse<UserProfileResponse>>> getFollowers(
             @PathVariable("userId") UUID userId,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of followers per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> followers = followService.getFollowers(userId, pageable);
-        return ResponseEntity.ok(PagedResponse.of(followers));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponse.of(followers)));
     }
 
     @GetMapping("/{userId}/following")
     @Operation(summary = "Get list of following",
                description = "Returns paginated list of users that the specified user follows")
-    public ResponseEntity<PagedResponse<UserProfileResponse>> getFollowing(
+    public ResponseEntity<ApiResponse<PagedResponse<UserProfileResponse>>> getFollowing(
             @PathVariable("userId") UUID userId,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of users per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> following = followService.getFollowing(userId, pageable);
-        return ResponseEntity.ok(PagedResponse.of(following));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponse.of(following)));
     }
 
     @GetMapping("/mutual-friends")
     @Operation(summary = "Get current user's mutual friends",
                description = "Returns paginated list of users who both follow each other with the current user")
-    public ResponseEntity<PagedResponse<UserProfileResponse>> getCurrentUserMutualFriends(
+    public ResponseEntity<ApiResponse<PagedResponse<UserProfileResponse>>> getCurrentUserMutualFriends(
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of mutual friends per page") @RequestParam(name = "size", defaultValue = "20") int size,
             Authentication authentication) {
         UUID currentUserId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> mutualFriends = followService.getMutualFriends(currentUserId, pageable);
-        return ResponseEntity.ok(PagedResponse.of(mutualFriends));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponse.of(mutualFriends)));
     }
 
     @GetMapping("/{userId}/mutual-friends")
     @Operation(summary = "Get mutual friends",
                description = "Returns paginated list of users who both follow each other with the specified user")
-    public ResponseEntity<PagedResponse<UserProfileResponse>> getMutualFriends(
+    public ResponseEntity<ApiResponse<PagedResponse<UserProfileResponse>>> getMutualFriends(
             @PathVariable("userId") UUID userId,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of mutual friends per page") @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> mutualFriends = followService.getMutualFriends(userId, pageable);
-        return ResponseEntity.ok(PagedResponse.of(mutualFriends));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponse.of(mutualFriends)));
     }
 }

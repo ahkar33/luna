@@ -1,5 +1,6 @@
 package com.luna.common.controller;
 
+import com.luna.common.dto.ApiResponse;
 import com.luna.common.dto.UploadResponse;
 import com.luna.common.exception.BadRequestException;
 import com.luna.common.service.CloudinaryService;
@@ -33,7 +34,7 @@ public class UploadController {
                       "Use the returned URL in subsequent create/update calls. " +
                       "Allowed folders: profiles, posts."
     )
-    public ResponseEntity<UploadResponse> upload(
+    public ResponseEntity<ApiResponse<UploadResponse>> upload(
             @RequestPart("file") MultipartFile file,
             @Parameter(description = "Storage folder", example = "posts")
             @RequestParam(value = "folder", defaultValue = "posts") String folder) {
@@ -50,6 +51,6 @@ public class UploadController {
             url = cloudinaryService.uploadImage(file, folder);
         }
 
-        return ResponseEntity.ok(new UploadResponse(url));
+        return ResponseEntity.ok(ApiResponse.success(new UploadResponse(url)));
     }
 }

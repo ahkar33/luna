@@ -1,5 +1,6 @@
 package com.luna.user.controller;
 
+import com.luna.common.dto.ApiResponse;
 import com.luna.common.dto.PagedResponse;
 import com.luna.security.SecurityUtils;
 import com.luna.user.dto.UpdateProfileRequest;
@@ -34,26 +35,26 @@ public class UserController {
     
     @GetMapping("/profile")
     @Operation(summary = "Get current user profile")
-    public ResponseEntity<UserProfileResponse> getCurrentUserProfile(Authentication authentication) {
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getCurrentUserProfile(Authentication authentication) {
         UUID userId = SecurityUtils.getUserId(authentication);
         UserProfileResponse response = userService.getUserProfile(userId, userId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{userId}/profile")
     @Operation(summary = "Get user profile by ID")
-    public ResponseEntity<UserProfileResponse> getUserProfile(
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getUserProfile(
             @PathVariable("userId") UUID userId,
             Authentication authentication) {
         UUID currentUserId = authentication != null ? SecurityUtils.getUserId(authentication) : null;
         UserProfileResponse response = userService.getUserProfile(userId, currentUserId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
-    
+
     @PutMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Update profile",
                description = "Update display name, bio, and/or profile image. All fields are optional.")
-    public ResponseEntity<UserProfileResponse> updateProfile(
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateProfile(
             @RequestPart(value = "image", required = false) MultipartFile image,
             @RequestPart(value = "username", required = false) String username,
             @RequestPart(value = "displayName", required = false) String displayName,
@@ -65,25 +66,25 @@ public class UserController {
         request.setDisplayName(displayName);
         request.setBio(bio);
         UserProfileResponse response = userService.updateProfile(userId, request, image);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
-    
+
     @GetMapping("/suggestions")
     @Operation(summary = "Get suggested users to follow",
                description = "Returns user suggestions based on mutual connections or popularity for new users")
-    public ResponseEntity<List<UserSuggestionResponse>> getSuggestedUsers(
+    public ResponseEntity<ApiResponse<List<UserSuggestionResponse>>> getSuggestedUsers(
             @Parameter(description = "Number of suggestions to return (max: 50)", example = "10")
             @RequestParam(name = "limit", defaultValue = "10") int limit,
             Authentication authentication) {
         UUID userId = SecurityUtils.getUserId(authentication);
         List<UserSuggestionResponse> suggestions = userService.getSuggestedUsers(userId, Math.min(limit, 50));
-        return ResponseEntity.ok(suggestions);
+        return ResponseEntity.ok(ApiResponse.success(suggestions));
     }
 
     @GetMapping("/search")
     @Operation(summary = "Search users by username",
                description = "Search for users by username. Results are sorted by relevance and popularity.")
-    public ResponseEntity<PagedResponse<UserProfileResponse>> searchUsers(
+    public ResponseEntity<ApiResponse<PagedResponse<UserProfileResponse>>> searchUsers(
             @Parameter(description = "Search query (username)", example = "john")
             @RequestParam(name = "q") String q,
             @Parameter(description = "Page number (0-indexed)", example = "0")
@@ -92,6 +93,6 @@ public class UserController {
             @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<UserProfileResponse> results = userService.searchUsers(q, pageable);
-        return ResponseEntity.ok(PagedResponse.of(results));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponse.of(results)));
     }
 }

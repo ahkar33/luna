@@ -1,6 +1,6 @@
 package com.luna.notification.controller;
 
-import com.luna.auth.dto.MessageResponse;
+import com.luna.common.dto.ApiResponse;
 import com.luna.notification.dto.RegisterFcmTokenRequest;
 import com.luna.notification.service.INotificationService;
 import com.luna.security.SecurityUtils;
@@ -29,12 +29,12 @@ public class FcmTokenController {
             summary = "Register FCM token",
             description = "Register a device FCM token for the authenticated user to receive push notifications"
     )
-    public ResponseEntity<MessageResponse> registerToken(
+    public ResponseEntity<ApiResponse<Void>> registerToken(
             @Valid @RequestBody RegisterFcmTokenRequest request,
             Authentication authentication) {
         UUID userId = SecurityUtils.getUserId(authentication);
         notificationService.registerToken(userId, request);
-        return ResponseEntity.ok(new MessageResponse("FCM token registered successfully"));
+        return ResponseEntity.ok(ApiResponse.success("FCM token registered successfully"));
     }
 
     @DeleteMapping("/{token}")
@@ -42,8 +42,8 @@ public class FcmTokenController {
             summary = "Unregister FCM token",
             description = "Remove a device FCM token, call this on logout or app uninstall"
     )
-    public ResponseEntity<MessageResponse> unregisterToken(@PathVariable("token") String token) {
+    public ResponseEntity<ApiResponse<Void>> unregisterToken(@PathVariable("token") String token) {
         notificationService.unregisterToken(token);
-        return ResponseEntity.ok(new MessageResponse("FCM token unregistered successfully"));
+        return ResponseEntity.ok(ApiResponse.success("FCM token unregistered successfully"));
     }
 }

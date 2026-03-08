@@ -1,5 +1,6 @@
 package com.luna.post.controller;
 
+import com.luna.common.dto.ApiResponse;
 import com.luna.common.dto.PagedResponse;
 import com.luna.post.dto.HashtagResponse;
 import com.luna.post.dto.PostResponse;
@@ -31,24 +32,24 @@ public class HashtagController {
     
     @GetMapping("/trending")
     @Operation(summary = "Get trending hashtags", description = "Returns most used hashtags in the last 24 hours")
-    public ResponseEntity<List<HashtagResponse>> getTrendingHashtags(
+    public ResponseEntity<ApiResponse<List<HashtagResponse>>> getTrendingHashtags(
             @Parameter(description = "Maximum number of hashtags to return") @RequestParam(name = "limit", defaultValue = "10") int limit) {
         List<HashtagResponse> trending = hashtagService.getTrendingHashtags(Math.min(limit, 50));
-        return ResponseEntity.ok(trending);
+        return ResponseEntity.ok(ApiResponse.success(trending));
     }
-    
+
     @GetMapping("/search")
     @Operation(summary = "Search hashtags", description = "Search hashtags by prefix")
-    public ResponseEntity<List<HashtagResponse>> searchHashtags(
+    public ResponseEntity<ApiResponse<List<HashtagResponse>>> searchHashtags(
             @Parameter(description = "Search query") @RequestParam(name = "q") String q,
             @Parameter(description = "Maximum number of results to return") @RequestParam(name = "limit", defaultValue = "10") int limit) {
         List<HashtagResponse> results = hashtagService.searchHashtags(q, Math.min(limit, 50));
-        return ResponseEntity.ok(results);
+        return ResponseEntity.ok(ApiResponse.success(results));
     }
-    
+
     @GetMapping("/{hashtag}/posts")
     @Operation(summary = "Get posts by hashtag", description = "Returns posts containing the specified hashtag")
-    public ResponseEntity<PagedResponse<PostResponse>> getPostsByHashtag(
+    public ResponseEntity<ApiResponse<PagedResponse<PostResponse>>> getPostsByHashtag(
             @PathVariable("hashtag") String hashtag,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(name = "page", defaultValue = "0") int page,
             @Parameter(description = "Number of posts per page") @RequestParam(name = "size", defaultValue = "10") int size,
@@ -56,6 +57,6 @@ public class HashtagController {
         UUID userId = SecurityUtils.getUserId(authentication);
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         Page<PostResponse> posts = hashtagService.getPostsByHashtag(hashtag, userId, pageable);
-        return ResponseEntity.ok(PagedResponse.of(posts));
+        return ResponseEntity.ok(ApiResponse.success(PagedResponse.of(posts)));
     }
 }
